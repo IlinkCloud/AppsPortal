@@ -181,6 +181,7 @@
                             class="sapUiMediumMarginBottom"
                             columns="3"
                             valueState="Information"
+                            select=".onRadioSelectionChange"
                         >
                             <buttons>
                                 <RadioButton
@@ -376,16 +377,22 @@
                             />
                             <Link
                                 id="_IDGenLink"
-                                text="{facturas>AccountingDocument}"
+                                text="{ parts: [ {path: 'facturas>IsCleared'}, {path: 'facturas>SupplierInvoice'}, {path: 'facturas>ClearingAccountingDocument'} ], formatter: '.formatNumeroSAP' }"
                                 press=".onSapNumberPress"
                             />
                             <Text
                                 id="_IDGenText15"
-                                text="{facturas>SupplierInvoice}"
+                                text="{facturas>ReferenceDocument}"
                             />
                             <Text
                                 id="_IDGenText16"
-                                text="{path: 'facturas>AccountingDocumentType', formatter: '.formatTipoDocumento'}"
+                                text="{
+    parts: [
+      {path: 'facturas>IsCleared'},
+      {path: 'facturas>AccountingDocumentType'}
+    ],
+    formatter: '.formatTipoDocumentoPorEstatus'
+  }"
                             />
                             <Text
                                 id="_IDGenText17"
@@ -406,7 +413,7 @@
                             <ObjectNumber
                                 id="_IDGenObjectNumber"
                                 number="{facturas>AmountInTransactionCurrency}"
-                                unit="MXN"
+                                unit="{facturas>TransactionCurrency}"
                             />
                         </cells>
                     </ColumnListItem>
