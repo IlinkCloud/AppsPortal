@@ -2,9 +2,10 @@ sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/model/json/JSONModel",
   "sap/ui/model/Filter",
+  "sap/ui/core/BusyIndicator",
   "sap/ui/model/FilterOperator",
   "sap/ui/model/Sorter"
-], (Controller, JSONModel, Filter, FilterOperator, Sorter) => {
+], (Controller, JSONModel, Filter, BusyIndicator, FilterOperator, Sorter) => {
   "use strict";
 
   const fnFormat = (d) => d.toISOString().split("T")[0];
@@ -45,6 +46,7 @@ sap.ui.define([
     getStatements: function (sDateFrom, sDateTo) {
       let finalDate = sDateTo ? new Date(sDateTo) : new Date();
       let initDate = sDateFrom ? new Date(sDateFrom) : subtractDays(finalDate, daysBackDefault);
+      BusyIndicator.show(100);
 
       const url = `/odata/v4/account-statement/AccountStatement?initDate=${fnFormat(initDate)}&finalDate=${fnFormat(finalDate)}`;
       console.log("URL llamada:", url);
@@ -88,7 +90,10 @@ sap.ui.define([
             oBinding.sort(oSorter);
           }
         })
-        .catch(error => console.error("Error:", error));
+        .catch(error => console.error("Error:", error))
+        .finally(() => {
+          BusyIndicator.hide();
+        });
     },
 
     onDateRangeChange: function (oEvent) {
@@ -103,6 +108,68 @@ sap.ui.define([
 
     formatStatus: function (bCleared) {
       return bCleared ? "Pagada" : "Pendiente";
+    },
+
+    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc) {
+      if (bCleared) {
+        return clearingDoc || "";   // si está pagada, mostrar ClearingAccountingDocument
+      } else {
+        return supplierInvoice || ""; // si está pendiente, mostrar SupplierInvoice
+      }
+    },
+
+    formatTipoDocumentoPorEstatus: function (bCleared, tipo) {
+      if (bCleared) {
+        return "PAGO";
+      } else {
+        return "FACTURA";
+      }
+    },
+
+    onRadioSelectionChange: function (oEvent) {
+      const selectedIndex = oEvent.getParameter("selectedIndex");
+      const oTable = this.byId("cuentasTable");
+      const oBinding = oTable.getBinding("items");
+      const oDateRange = this.byId("dateRange");
+
+      if (!oBinding) return;
+
+      let aFilters = [];
+
+      switch (selectedIndex) {
+        case 0: // Pendientes
+          aFilters.push(new Filter("IsCleared", FilterOperator.EQ, false));
+          oBinding.filter(aFilters);
+          oDateRange.setVisible(false); // ocultar calendario
+          break;
+        case 1: // Pagadas
+          aFilters.push(new Filter("IsCleared", FilterOperator.EQ, true));
+          oBinding.filter(aFilters);
+          oDateRange.setVisible(false); // ocultar calendario
+          break;
+        case 2: // Todos
+          oBinding.filter([]);
+          oDateRange.setVisible(true);
+          break;
+      }
+    },
+
+
+    onSearch: function (oEvent) {
+      const sQuery = oEvent.getParameter("newValue") || oEvent.getSource().getValue();
+      const sKey = this.byId("_IDGenSelect").getSelectedKey();
+
+      const oTable = this.byId("cuentasTable");
+      const oBinding = oTable.getBinding("items");
+
+      if (!oBinding) return;
+
+      let aFilters = [];
+      if (sQuery) {
+        aFilters.push(new Filter(sKey, FilterOperator.Contains, sQuery));
+      }
+
+      oBinding.filter(aFilters);
     },
 
     onDateRangeChange: function (oEvent) {
@@ -169,13 +236,56 @@ sap.ui.define([
     },
 
 
-    onSapNumberPress: function (oEvent) {
+    onSapNumberPress: async function (oEvent) {
       const oContext = oEvent.getSource().getBindingContext("facturas");
       const oData = oContext.getObject();
 
+      // Solo mostrar si está pagada
+      if (!oData.IsCleared) {
+        sap.m.MessageToast.show("Este documento no está pagado, no hay datos que mostrar.");
+        return;
+      }
+
+      // Consultar UUID desde la CDS usando AccountingDocument
+      let uuidValue = "";
+      let detalle = [];
+      try {
+        const response = await fetch(
+          "/sap/opu/odata/sap/YY1_UUID_CDS/YY1_UUID?$filter=AccountingDocument eq '" + oData.SupplierInvoice + "'",
+          {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            credentials: "include"
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          uuidValue = result?.d?.results?.[0]?.JrnlEntryCntrySpecificRef1 || "";
+        } else {
+          console.warn("UUID no encontrado para documento:", oData.AccountingDocument);
+          uuidValue = "";
+        }
+      } catch (err) {
+        console.error("Error consultando UUID:", err);
+        uuidValue = "";
+      }
+
+      // Construir datos para la tabla del diálogo
+      detalle = [{
+        SupplierInvoice: oData.SupplierInvoice,
+        UUID: uuidValue,
+        Reference: oData.DocumentReferenceID,
+        FechaFactura: oData.ClearingCreationDate,
+        Importe: oData.AmountInTransactionCurrency,
+        Moneda: oData.TransactionCurrency
+      }];
+
+      const oModel = new sap.ui.model.json.JSONModel({ detalle });
+
       if (!this.oFacturaDialog) {
         this.oFacturaDialog = new sap.m.Dialog({
-          title: "Facturas Relacionadas",
+          title: "Detalle de Pago",
           contentWidth: "600px",
           contentHeight: "400px",
           resizable: true,
@@ -190,16 +300,16 @@ sap.ui.define([
                 new sap.m.Column({ header: new sap.m.Text({ text: "Importe" }) })
               ],
               items: {
-                path: "facturas>/relatedInvoices",
+                path: "detalle>/detalle",
                 template: new sap.m.ColumnListItem({
                   cells: [
-                    new sap.m.Text({ text: "{facturas>SupplierInvoice}" }),
-                    new sap.m.Text({ text: "{facturas>JrnlEntryCntrySpecificRef1}" }),
-                    new sap.m.Text({ text: "{facturas>Reference}" }),
-                    new sap.m.Text({ text: "{facturas>DocumentDate}" }),
+                    new sap.m.Text({ text: "{detalle>SupplierInvoice}" }),
+                    new sap.m.Text({ text: "{detalle>UUID}" }),
+                    new sap.m.Text({ text: "{detalle>Reference}" }),
+                    new sap.m.Text({ text: "{detalle>FechaFactura}" }),
                     new sap.m.ObjectNumber({
-                      number: "{facturas>AmountInTransactionCurrency}",
-                      unit: "{facturas>DocumentCurrency}"
+                      number: "{detalle>Importe}",
+                      unit: "{detalle>Moneda}"
                     })
                   ]
                 })
@@ -214,6 +324,7 @@ sap.ui.define([
         this.getView().addDependent(this.oFacturaDialog);
       }
 
+      this.oFacturaDialog.setModel(oModel, "detalle");
       this.oFacturaDialog.open();
     }
 
