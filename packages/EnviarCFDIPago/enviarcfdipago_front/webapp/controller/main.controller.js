@@ -419,29 +419,23 @@ sap.ui.define([
                 }
             // }
 
-            // if (aDeviations.length > 0) {
-            //     const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxQntyTolerance);
-            //     if (sResponse === "Cancelar") {
-            //         return;
-            //     }else{
-            //         sInvoiceStatus = "A";
-            //     }
-            // }
-
             BusyIndicator.show(100);
 
             try {
  
                 const payload = {
-                    "DOCUMENT_NUMBER": oData.PaymentDocument,
-                    "EXERCISE": oData.PaymentDate.split("-")[0],
-                    "SOCIETY": oData.CompanyCode,
-                    "BUY_DOCUMENT": sInvoiceStatus,
-                    "POSITION_NUMBER": sInvoiceStatus,
-                    "MATERIAL_DOCUMENT": sInvoiceStatus,
-                    "MATERIAL_DOCUMENT_POS": sInvoiceStatus,
-                    "MATERIAL_NUMBER": sInvoiceStatus,
-                    "AMMOUNT": oData.Ammount
+                    data: {
+                        "DocumentNumber": oData.PaymentDocument,
+                        "Exercise": oData.FiscalYear,
+                        "Society": oData.CompanyCode,
+                        "BuyDocument": oData.BuyDocument,
+                        "PositionNumber": oData.PositionNumber,
+                        "MaterialDocument": oData.MaterialDocument,
+                        "MaterialDocumentPos": oData.MaterialDocumentPos,
+                        "MaterialNumber": oData.MaterialNumber,
+                        "Ammount": oData.Ammount,
+                        "UUID": datosCFDI.UUID
+                    }
                 };
 
                 const res = await fetch("/odata/v4/cfdipayment/Upload", {
@@ -456,7 +450,7 @@ sap.ui.define([
  
                 if (!res.ok) {
                     const errText = await res.text();
-                    MessageBox.error("Error al subir a MIRO:\n" + errText);
+                    MessageBox.error("Error al subir a Complemento de Pago:\n" + errText);
                     BusyIndicator.hide();
                     return;
                 }
