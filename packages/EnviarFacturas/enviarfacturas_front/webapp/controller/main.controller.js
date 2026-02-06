@@ -1,7 +1,7 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageBox",
-	"sap/ui/core/BusyIndicator",
+    "sap/ui/core/BusyIndicator",
     "sap/m/Dialog",
     "sap/m/Text",
     "sap/m/Button"
@@ -102,7 +102,7 @@ sap.ui.define([
                 .catch(err => console.error("[postEstatusFactura] Error:", err));
         },
 
-        async postLogAttachmentPDF (file, documentId, supplier) {
+        async postLogAttachmentPDF(file, documentId, supplier) {
             const url = "/odata/v4/goods-receipts/AdjuntarFacturaPDF";
             const sFileBase64 = await this._fileToBase64(file);
             const oPayload = {
@@ -127,7 +127,7 @@ sap.ui.define([
                 }
 
                 const data = await response.json();
-                return {message: data.mensaje, success: true};
+                return { message: data.mensaje, success: true };
             } catch (err) {
                 console.error("[postLogAttachmentPDF] Error:", err);
                 return { message: "No fue posible subir el PDF", success: false };
@@ -159,7 +159,7 @@ sap.ui.define([
                 }
 
                 const data = await response.json();
-                return {message: data.mensaje, success: true};
+                return { message: data.mensaje, success: true };
             } catch (err) {
                 console.error("[postLogAttachmentPDF] Error:", err);
                 return { message: "No fue posible subir el XML", success: false };
@@ -248,8 +248,8 @@ sap.ui.define([
             const that = this;
             const oTable = that.byId("docMatList");
             const aSelected = oTable.getSelectedItems();
-            
-            
+
+
             if (aSelected.length === 0) {
                 MessageBox.error("Debes seleccionar un documento en la tabla antes de subir archivos.");
                 return;
@@ -259,7 +259,7 @@ sap.ui.define([
 
         },
 
-        _showUploadFileDialog(aSelected){
+        _showUploadFileDialog(aSelected) {
             const oController = this;
             let aFiles;
             if (!this._oUploadDialog) {
@@ -272,8 +272,8 @@ sap.ui.define([
                     change: function (oEvent) {
                         aFiles = Array.from(oEvent.getParameter("files"));
 
-                        if(aFiles.length === 0) return;
-                        
+                        if (aFiles.length === 0) return;
+
                         oAnexosLabel.setText(`Anexos (${aFiles.length})`);
                         oFileList.removeAllItems();
 
@@ -316,7 +316,7 @@ sap.ui.define([
                 this._oUploadDialog = new sap.m.Dialog({
                     title: "Cargar Archivos CFDI",
                     contentWidth: "550px",
-					contentHeight: "300px",
+                    contentHeight: "300px",
                     verticalScrolling: true,
                     horizontalScrolling: false,
                     content: [
@@ -360,7 +360,7 @@ sap.ui.define([
                                     isThereXML = true;
                                 }
                             }
-                            
+
                             if (!isTherePDF || !isThereXML) {
                                 MessageBox.error("Se requiere un documento XML y un PDF");
                                 return;
@@ -396,7 +396,21 @@ sap.ui.define([
                                         };
 
                                         try {
-                                            const res = await fetch("/odata/v4/goods-receipts/ValidarFactura", {
+                                            // Consultar primero el valor de ValidacionPAC
+                                            const validacionPAC = await oController.getValidacionPAC(); 
+
+                                            let urlValidacion;
+                                            if (validacionPAC) {
+                                                // Si ValidacionPAC es true, usar ValidarCFDIListo
+                                                urlValidacion = "/odata/v4/goods-receipts/ValidarFacturaReglasPac";
+                                                console.log("[Validación] Usando ValidarCFDIListo (validación PAC activada)");
+                                            } else {
+                                                // Si ValidacionPAC es false, usar ValidarFactura
+                                                urlValidacion = "/odata/v4/goods-receipts/ValidarFactura";
+                                                console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
+                                            }
+
+                                            const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
@@ -411,7 +425,7 @@ sap.ui.define([
                                                 if (data.datos) {
                                                     const oContext = aSelected[0].getBindingContext("documents");
                                                     const oData = oContext.getObject();
- 
+
                                                     data.datos.Items = [{
                                                         MaterialDocument: oData.MaterialDocument || "",
                                                         MaterialDocumentItem: oData.MaterialDocumentItem || "1",
@@ -421,10 +435,10 @@ sap.ui.define([
                                                         Plant: oData.Plant || data.datos.BUKRS,
                                                         QuantityInEntryUnit: oData.QuantityInEntryUnit || 1
                                                     }];
- 
+
                                                     data.datos.ReferenceDocument = oData.ReferenceDocument;
                                                     data.datos.FixedUUID = data.datos.Comprobante?.['cfdi:CfdiRelacionados']?.['cfdi:CfdiRelacionado']?.['@_UUID'] || null;
- 
+
                                                     oController._mostrarResumenCFDI(data.datos, pdfFile, xmlFile);
                                                 }
                                             } else {
@@ -432,7 +446,7 @@ sap.ui.define([
                                                 const sDuplicatedMsg = errores.find(sError => sError.includes("está repetido"));
                                                 if (sDuplicatedMsg) {
                                                     oController._showDuplicatedUUIDMessage(sDuplicatedMsg, aSelected);
-                                                }else{
+                                                } else {
                                                     MessageBox.error("Factura inválida:\n" + errores.join("\n"));
                                                 }
                                             }
@@ -496,6 +510,43 @@ sap.ui.define([
             oDialog.open();
         },
 
+        getValidacionPAC: function () {
+            return new Promise((resolve) => {
+                const url = "/odata/v4/global-param/Param";
+                fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    credentials: "include"
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error("Error al obtener parámetros");
+                        return res.json();
+                    })
+                    .then(data => {
+                        const results = data.value || [];
+                        if (results.length > 0) {
+                            const param = results[0];
+                            try {
+                                const parsed = JSON.parse(param.ParamValue);
+                                const validacionPAC = parsed.ValidacionPAC || false;
+                                console.log("[getValidacionPAC] Valor:", validacionPAC);
+                                resolve(validacionPAC);
+                            } catch (err) {
+                                console.error("[getValidacionPAC] Error parseando ParamValue:", err);
+                                resolve(false); // Valor por defecto
+                            }
+                        } else {
+                            console.log("[getValidacionPAC] No se encontraron parámetros, usando valor por defecto: false");
+                            resolve(false); // Valor por defecto
+                        }
+                    })
+                    .catch(err => {
+                        console.error("[getValidacionPAC] Error:", err);
+                        resolve(false); // Valor por defecto en caso de error
+                    });
+            });
+        },
+
         _mostrarResumenCFDI: function (datosCFDI, pdfFile, xmlFile) {
             const oDialog = new sap.m.Dialog({
                 title: "Resumen CFDI",
@@ -508,7 +559,7 @@ sap.ui.define([
                             new sap.m.Column({ header: new sap.m.Label({ text: "Impuesto retenido" }) }),
                             new sap.m.Column({ header: new sap.m.Label({ text: "Impuestos" }) }),
                             new sap.m.Column({ header: new sap.m.Label({ text: "Total" }) }),
-                            new sap.m.Column({  header: new sap.m.Label({ text: "Acciones" }), hAlign: "Center" })
+                            new sap.m.Column({ header: new sap.m.Label({ text: "Acciones" }), hAlign: "Center" })
                         ],
                         items: [
                             new sap.m.ColumnListItem({
@@ -524,7 +575,7 @@ sap.ui.define([
                                         items: [
                                             pdfFile ? new sap.m.Button({
                                                 icon: "sap-icon://pdf-attachment",
-                                                tooltip: "Ver PDF", 
+                                                tooltip: "Ver PDF",
                                                 press: () => this._verPDF(pdfFile)
                                             }).addStyleClass("sapUiSmallMarginEnd") : null,
                                             new sap.m.Button({
@@ -574,7 +625,7 @@ sap.ui.define([
 
             const sFileUrl = URL.createObjectURL(oFile);
 
-            jQuery.sap.addUrlWhitelist("blob"); 
+            jQuery.sap.addUrlWhitelist("blob");
 
             if (!this._pdfViewer) {
                 this._pdfViewer = new sap.m.PDFViewer({
@@ -592,7 +643,7 @@ sap.ui.define([
             this._pdfViewer.open();
         },
 
-        formatDateForFrontEnd (date, odataVersion = "V2") {
+        formatDateForFrontEnd(date, odataVersion = "V2") {
             if (!date) return null;
             const d = new Date(date);
             return odataVersion === "V2"
@@ -606,14 +657,14 @@ sap.ui.define([
             const nMaxQntyTolerance = 150;
             const aDeviations = [];
             let sInvoiceStatus = "5";
-            
+
             for (let i = 0; i < aSelected.length; i++) {
                 const oElement = aSelected[i];
                 const oContext = oElement.getBindingContext("documents");
                 const oData = oContext.getObject();
                 const nTotalWithTax = oData.EffectiveAmount + (oData.EffectiveAmount * 0.16);
 
-                if (nTotalWithTax + nMaxQntyTolerance < Number(datosCFDI.TOTAL) ) {
+                if (nTotalWithTax + nMaxQntyTolerance < Number(datosCFDI.TOTAL)) {
                     const nDeviation = Math.abs(nTotalWithTax - Number(datosCFDI.TOTAL));
                     aDeviations.push(nDeviation);
                     break;
@@ -624,7 +675,7 @@ sap.ui.define([
                 const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxQntyTolerance);
                 if (sResponse === "Cancelar") {
                     return;
-                }else{
+                } else {
                     sInvoiceStatus = "A";
                 }
             }
@@ -632,7 +683,7 @@ sap.ui.define([
             BusyIndicator.show(100);
 
             try {
- 
+
                 const payload = {
                     "Items": datosCFDI.Items,
                     "Reference": datosCFDI.ReferenceDocument,
@@ -669,7 +720,7 @@ sap.ui.define([
                     body: JSON.stringify(payload),
                     credentials: "include"
                 });
- 
+
                 if (!res.ok) {
                     const errText = await res.text();
                     MessageBox.error("Error al subir a MIRO:\n" + errText);
@@ -710,10 +761,10 @@ sap.ui.define([
             }
         },
 
-        _showResultDialog: function(aResults) {
+        _showResultDialog: function (aResults) {
             const oVBox = new sap.m.VBox({
                 items: [
-                    ...aResults.map(function(item) {
+                    ...aResults.map(function (item) {
                         return new sap.m.VBox({
                             items: [
                                 new sap.m.ObjectStatus({
@@ -721,8 +772,8 @@ sap.ui.define([
                                     icon: item.icon,
                                     state: item.success ? "Success" : "Error"
                                 }),
-                                new sap.m.Text({ 
-                                    text: item.message 
+                                new sap.m.Text({
+                                    text: item.message
                                 }).addStyleClass("sapUiSmallMarginBottom")
                             ]
                         }).addStyleClass("sapUiSmallMarginBottom");
@@ -739,7 +790,7 @@ sap.ui.define([
                         oDialog.close();
                     }
                 }),
-                afterClose: function() {
+                afterClose: function () {
                     oDialog.destroy();
                 }
             }).addStyleClass("sapUiResponsivePadding--content sapUiResponsivePadding--header sapUiResponsivePadding--footer sapUiResponsivePadding--subHeader");
@@ -783,7 +834,7 @@ sap.ui.define([
                         oDialog.destroy();
                     }
                 });
-    
+
                 oDialog.open();
             });
 
@@ -818,6 +869,6 @@ sap.ui.define([
             });
 
             return pFile;
-        } 
+        }
     });
 });

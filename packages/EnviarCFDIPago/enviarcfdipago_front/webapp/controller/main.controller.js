@@ -336,7 +336,7 @@ sap.ui.define([
                                             }).addStyleClass("sapUiSmallMarginEnd") : null,
                                             new sap.m.Button({
                                                 icon: "sap-icon://upload",
-                                                tooltip: "Subir a MIRO",
+                                                tooltip: "Subir a Base de Datos",
                                                 type: "Emphasized",
                                                 press: () => this._subirAFI(datosCFDI, pdfFile, xmlFile)
                                             }).addStyleClass("sapUiSmallMarginEnd"),
@@ -543,7 +543,7 @@ sap.ui.define([
 
                 const aResults = [
                     {
-                        label: "Factura a MIRO",
+                        label: "Factura a Base de Datos",
                         message: `Factura cargada en la base de datos}`,
                         icon: "sap-icon://accounting-document-verification",
                         success: true

@@ -16,6 +16,7 @@ sap.ui.define([
         },
 
         getBusinessPartner: function () {
+            BusyIndicator.show(100);
             const url = "/odata/v4/invitacion/ReadSupplier";
             console.log("[getBusinessPartner] URL: ", url);
 
@@ -44,10 +45,12 @@ sap.ui.define([
                     oModel.setProperty("/UsrsDatos", aContactos);
 
                     this.getCreditNotesReceipt(data.value);
+                    BusyIndicator.hide();
                 })
                 .catch(err => {
                     console.error("[getBusinessPartner] Error: ", err);
                     MessageBox.error("Error al cargar destinatarios");
+                    BusyIndicator.hide();
                 });
         },
 
@@ -88,28 +91,17 @@ sap.ui.define([
                     });
 
                     this._aAllDocs = aFacturas.slice();
-
                     this.getView().setModel(
                         new sap.ui.model.json.JSONModel({ results: aFacturas }),
                         "documents"
                     );
+
+                    BusyIndicator.hide();
                 })
-                .catch(err => console.error("[getCreditNotesReceipt] Error:", err))
-                .finally(() => {
+                .catch(err => {
+                    console.error("[getCreditNotesReceipt] Error:", err)
                     BusyIndicator.hide();
                 });
-        },
-
-        postEstatusFactura: function () {
-            const url = "/odata/v4/credit-notes-reception/ValidarFactura";
-            console.log("[postEstatusFactura] URL:", url);
-
-            fetch(url, { method: "POST", headers: { "Accept": "application/json" }, credentials: "include" })
-                .then(res => {
-                    console.log("[postEstatusFactura] Respuesta:", res.status, res.statusText);
-                    return res.ok ? res.json() : res.text().then(t => { throw new Error(t); });
-                })
-                .catch(err => console.error("[postEstatusFactura] Error:", err));
         },
 
         postLogAttachmentPDF: function (file, documentId) {
@@ -243,7 +235,6 @@ sap.ui.define([
             const that = this;
             if (!this._oUploadDialog) {
                 let aFiles = [];
-
                 const oFileUploader = new sap.ui.unified.FileUploader({
                     id: "fileUploader",
                     name: "file",
@@ -255,13 +246,11 @@ sap.ui.define([
                         aFiles = files;
                         oAnexosLabel.setText(`Anexos (${files.length})`);
                         oFileList.removeAllItems();
-
                         for (const file of files) {
                             if (file.size > 10 * 1024 * 1024) {
                                 sap.m.MessageBox.error(`El archivo "${file.name}" excede el límite de 10 Mb.`);
                                 continue;
                             }
-
                             if (!(file.type === "application/pdf" || file.type === "text/xml" || file.type === "application/xml")) {
                                 sap.m.MessageBox.error(`El archivo "${file.name}" no es válido. Solo se permiten PDF o XML.`);
                                 continue;
@@ -313,9 +302,9 @@ sap.ui.define([
                                 sap.m.MessageBox.error("Debes subir ambos archivos: XML y PDF.");
                                 return;
                             }
+
                             let pdfFile = aFiles.find(f => f.type === "application/pdf");
                             let xmlFile = aFiles.find(f => f.type === "text/xml" || f.type === "application/xml");
-
                             const hasXML = aFiles.some(f => f.type === "text/xml" || f.type === "application/xml");
                             const hasPDF = aFiles.some(f => f.type === "application/pdf");
 
@@ -330,20 +319,18 @@ sap.ui.define([
                             }
 
                             const oTable = this.byId("docMatList");
-
                             for (const file of aFiles) {
-
                                 const aSelected = oTable.getSelectedItems();
                                 if (aSelected.length === 0) {
                                     sap.m.MessageBox.error("Debes seleccionar un documento en la tabla antes de subir archivos.");
                                     return;
                                 }
+
                                 const oContext = aSelected[0].getBindingContext("documents");
                                 const oData = oContext.getObject();
                                 console.log("[Front] supplierInvoiceId:", oData.MaterialDocument);
                                 console.log("[Front] PDF file size:", pdfFile.size, "bytes");
                                 console.log("[Front] XML file size:", xmlFile.size, "bytes");
-
 
                                 if (file.type === "application/pdf") {
                                     pdfFile = file;
@@ -367,7 +354,21 @@ sap.ui.define([
                                         };
 
                                         try {
-                                            const res = await fetch("/odata/v4/credit-notes-reception/ValidarFactura", {
+                                            // Consultar primero el valor de ValidacionPAC
+                                            const validacionPAC = await this.getValidacionPAC();
+
+                                            let urlValidacion;
+                                            if (validacionPAC) {
+                                                // Si ValidacionPAC es true, usar ValidarCFDIListo
+                                                urlValidacion = "/odata/v4/credit-notes-reception/ValidarFacturaReglasPac";
+                                                console.log("[Validación] Usando ValidarCFDIListo (validación PAC activada)");
+                                            } else {
+                                                // Si ValidacionPAC es false, usar ValidarFactura
+                                                urlValidacion = "/odata/v4/credit-notes-reception/ValidarFactura";
+                                                console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
+                                            }
+
+                                            const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
@@ -384,7 +385,6 @@ sap.ui.define([
                                             }
 
                                             const data = await res.json();
-
                                             if (data.valido && data.datos) {
                                                 const supplierInvoiceStatus = "A";
                                                 data.datos.supplierInvoiceStatus = supplierInvoiceStatus;
@@ -403,18 +403,14 @@ sap.ui.define([
                                                 that._mostrarResumenCFDI(data.datos, pdfFile, xmlFile, oData);
                                                 that._oUploadDialog.close();
                                                 that.uploadButton();
-
                                             } else {
                                                 const errores = data.errores ?? (data.mensaje ? [data.mensaje] : ["Factura inválida"]);
-
                                                 MessageBox.error("Factura inválida:\n" + errores.join("\n"));
-
                                                 if (that._oUploadDialog) {
                                                     that._oUploadDialog.close();
                                                     that._oUploadDialog.destroy();
                                                     that._oUploadDialog = null;
                                                 }
-
                                                 const uuidError = errores.find(e => e.includes("UUID") && e.includes("repetido"));
                                                 if (uuidError) {
                                                     const oDialog = new sap.m.Dialog({
@@ -445,7 +441,6 @@ sap.ui.define([
                                             console.error("[ValidarFactura] Error:", err);
                                             const msg = err?.message || JSON.stringify(err) || "Error desconocido";
                                             MessageBox.error("Error al validar factura:\n" + msg);
-
                                             if (that._oUploadDialog) {
                                                 that._oUploadDialog.close();
                                                 that._oUploadDialog.destroy();
@@ -470,8 +465,44 @@ sap.ui.define([
                     }.bind(this)
                 });
             }
-
             this._oUploadDialog.open();
+        },
+
+        getValidacionPAC: function () {
+            return new Promise((resolve) => {
+                const url = "/odata/v4/global-param/Param";
+                fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    credentials: "include"
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error("Error al obtener parámetros");
+                        return res.json();
+                    })
+                    .then(data => {
+                        const results = data.value || [];
+                        if (results.length > 0) {
+                            const param = results[0];
+                            try {
+                                const parsed = JSON.parse(param.ParamValue);
+                                const validacionPAC = parsed.ValidacionPAC || false;
+                                console.log("[getValidacionPAC] Valor:", validacionPAC);
+                                resolve(validacionPAC);
+                            } catch (err) {
+                                console.error("[getValidacionPAC] Error parseando ParamValue:", err);
+                                resolve(false); // Valor por defecto
+                            }
+                        } else {
+                            console.log("[getValidacionPAC] No se encontraron parámetros, usando valor por defecto: false");
+                            resolve(false); // Valor por defecto
+                        }
+                    })
+                    .catch(err => {
+                        console.error("[getValidacionPAC] Error:", err);
+                        resolve(false); // Valor por defecto en caso de error
+                    });
+            });
         },
 
         // Utilidad para formatear fecha en AAAA-MM-DD
