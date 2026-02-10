@@ -512,7 +512,7 @@ sap.ui.define([
 
         getValidacionPAC: function () {
             return new Promise((resolve) => {
-                const url = "/odata/v4/global-param/Param";
+                const url = "/odata/v4/testing-mode/Test";
                 fetch(url, {
                     method: "GET",
                     headers: { "Accept": "application/json" },

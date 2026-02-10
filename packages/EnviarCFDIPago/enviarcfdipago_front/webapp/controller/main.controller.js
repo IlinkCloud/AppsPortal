@@ -204,7 +204,21 @@ sap.ui.define([
                                         };
 
                                         try {
-                                            const res = await fetch("/odata/v4/cfdipayment/ValidarFactura", {
+                                            // Consultar primero el valor de ValidacionPAC
+                                            const validacionPAC = await oController.getValidacionPAC();
+
+                                            let urlValidacion;
+                                            if (validacionPAC) {
+                                                // Si ValidacionPAC es true, usar ValidarCFDIListo
+                                                urlValidacion = "/odata/v4/cfdipayment/ValidarFacturaReglasPac";
+                                                console.log("[Validación] Usando ValidarCFDIListo (validación PAC activada)");
+                                            } else {
+                                                // Si ValidacionPAC es false, usar ValidarFactura
+                                                urlValidacion = "/odata/v4/cfdipayment/ValidarFactura";
+                                                console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
+                                            }
+
+                                            const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
@@ -274,6 +288,43 @@ sap.ui.define([
             }
 
             this._oUploadDialog.open();
+        },
+
+        getValidacionPAC: function () {
+            return new Promise((resolve) => {
+                const url = "/odata/v4/testing-mode/Test";
+                fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    credentials: "include"
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error("Error al obtener parámetros");
+                        return res.json();
+                    })
+                    .then(data => {
+                        const results = data.value || [];
+                        if (results.length > 0) {
+                            const param = results[0];
+                            try {
+                                const parsed = JSON.parse(param.ParamValue);
+                                const validacionPAC = parsed.ValidacionPAC || false;
+                                console.log("[getValidacionPAC] Valor:", validacionPAC);
+                                resolve(validacionPAC);
+                            } catch (err) {
+                                console.error("[getValidacionPAC] Error parseando ParamValue:", err);
+                                resolve(false); // Valor por defecto
+                            }
+                        } else {
+                            console.log("[getValidacionPAC] No se encontraron parámetros, usando valor por defecto: false");
+                            resolve(false); // Valor por defecto
+                        }
+                    })
+                    .catch(err => {
+                        console.error("[getValidacionPAC] Error:", err);
+                        resolve(false); // Valor por defecto en caso de error
+                    });
+            });
         },
 
         _showDuplicatedUUIDMessage(sMessage, aSelected) {
