@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@sap/approuter": "^16.9.0",
+    "@sap/html5-repo-mock": "^2.2.1"
+  }
+}

@@ -397,7 +397,7 @@ sap.ui.define([
 
                                         try {
                                             // Consultar primero el valor de ValidacionPAC
-                                            const validacionPAC = await oController.getValidacionPAC(); 
+                                            const validacionPAC = await oController.getValidacionPAC();
 
                                             let urlValidacion;
                                             if (validacionPAC) {
@@ -420,6 +420,12 @@ sap.ui.define([
                                                 credentials: "include"
                                             });
 
+                                            if (!res.ok) {
+                                                const errText = await res.text();
+                                                sap.m.MessageBox.error("Error al validar factura:\n" + errText);
+                                                return;
+                                            }
+
                                             const data = await res.json();
                                             if (data.valido) {
                                                 if (data.datos) {
@@ -431,8 +437,8 @@ sap.ui.define([
                                                         MaterialDocumentItem: oData.MaterialDocumentItem || "1",
                                                         PurchaseOrder: oData.PurchaseOrder,
                                                         PurchaseOrderItem: String(oData.PurchaseOrderItem),
-                                                        Supplier: oData.Supplier || data.datos.LIFNR,
-                                                        Plant: oData.Plant || data.datos.BUKRS,
+                                                        Supplier: oData.Supplier || data.datos.SUPPLIER,
+                                                        Plant: oData.Plant || data.datos.SOCIETY,
                                                         QuantityInEntryUnit: oData.QuantityInEntryUnit || 1
                                                     }];
 
@@ -691,22 +697,22 @@ sap.ui.define([
                     "SupplierInvoiceStatus": sInvoiceStatus,
                     "CFDIData": {
                         UUID: datosCFDI.UUID,
-                        BUKRS: datosCFDI.SOCIETY,
+                        SOCIETY: datosCFDI.SOCIETY,
                         FOLIO: String(datosCFDI.FOLIO),
                         SERIE: String(datosCFDI.SERIE),
-                        LIFNR: datosCFDI.SUPPLIER,
+                        SUPPLIER: datosCFDI.SUPPLIER,
                         RFC: datosCFDI.RFC,
-                        FKDAT: datosCFDI.INVOICE_DATE,
-                        WAERS: datosCFDI.CURRENCY,
+                        INVOICE_DATE: datosCFDI.INVOICE_DATE,
+                        CURRENCY: datosCFDI.CURRENCY,
                         SUBTOTAL: datosCFDI.SUBTOTAL,
-                        DESCUENTO: datosCFDI.DISCOUNT,
+                        DISCOUNT: datosCFDI.DISCOUNT,
                         TOTAL_IMPUESTOSTRAS: datosCFDI.TOTAL_IMPUESTOSTRAS,
                         TOTAL_IMPUESTOSRET: datosCFDI.TOTAL_IMPUESTOSRET,
                         TOTAL: datosCFDI.TOTAL,
-                        FORMA_PAGO: String(datosCFDI.FORM_OF_PAYMENT),
-                        METODO_PAGO: String(datosCFDI.PAYMENT_METHOD),
-                        USO_CFDI: datosCFDI.CFDI_USE,
-                        ZED_TIPO_COMPROBANTE: datosCFDI.ZED_RECEIPT_TYPE,
+                        FORM_OF_PAYMENT: String(datosCFDI.FORM_OF_PAYMENT),
+                        PAYMENT_METHOD: String(datosCFDI.PAYMENT_METHOD),
+                        CFDI_USE: datosCFDI.CFDI_USE,
+                        ZED_RECEIPT_TYPE: datosCFDI.ZED_RECEIPT_TYPE,
                         XML: datosCFDI.XML
                     }
                 };
@@ -729,8 +735,8 @@ sap.ui.define([
                 }
 
                 const data = await res.json();
-                const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.LIFNR);
-                const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.LIFNR);
+                const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
+                const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
                 const aResults = [
                     {
                         label: "Factura a MIRO",

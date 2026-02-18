@@ -218,7 +218,7 @@ sap.ui.define([
                                                 console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
                                             }
 
-                                            const res = await fetch(urlValidacion, {
+                                             const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
@@ -227,6 +227,12 @@ sap.ui.define([
                                                 body: JSON.stringify(payload),
                                                 credentials: "include"
                                             });
+
+                                            if (!res.ok) {
+                                                const errText = await res.text();
+                                                sap.m.MessageBox.error("Error al validar complemento de pago:\n" + errText);
+                                                return;
+                                            }
 
                                             const data = await res.json();
                                             if (data.valido) {

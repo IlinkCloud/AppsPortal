@@ -380,7 +380,7 @@ sap.ui.define([
 
                                             if (!res.ok) {
                                                 const errText = await res.text();
-                                                sap.m.MessageBox.error("Error al validar factura:\n" + errText);
+                                                sap.m.MessageBox.error("Error al validar nota de crédito:\n" + errText);
                                                 return;
                                             }
 
