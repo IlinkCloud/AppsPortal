@@ -110,7 +110,7 @@ sap.ui.define([
                 length: 0,
                 table: []
             };
-            fetch("/odata/v4/ord-compra/ReadDocFlow?$filter=PurchaseOrder eq '" + PurchaseOrder + "'", {
+            fetch("/odata/v4/ord-compra/ReadDocFlow?$filter=PurchaseOrder eq '" + PurchaseOrder + "' and IsReturnsItem ne true", {
                 method: "GET",
                 headers: {
                     "Accept": "application/json"

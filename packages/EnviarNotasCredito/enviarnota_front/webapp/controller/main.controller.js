@@ -631,10 +631,23 @@ sap.ui.define([
             try {
                 const oTable = this.byId("docMatList");
                 const aSelected = oTable.getSelectedItems();
+                let sInvoiceStatus = "5";
+
                 if (aSelected.length === 0) {
                     sap.m.MessageBox.error("Debes seleccionar al menos un documento en la tabla.");
                     return;
                 }
+
+                if (aDeviations.length > 0) {
+                    const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxQntyTolerance);
+                    if (sResponse === "Cancelar") {
+                        return;
+                    } else {
+                        sInvoiceStatus = "A";
+                    }
+                }
+
+                BusyIndicator.show(100);
 
                 const items = [];
                 const lineTaxCodes = {};
@@ -661,7 +674,7 @@ sap.ui.define([
                     FixedUUID: datosCFDI.UUID || null,
                     DocumentHeaderText: String(datosCFDI.FOLIO || "SIN REFERENCIA"),
                     LineTaxCodes: JSON.stringify(lineTaxCodes),
-                    SupplierInvoiceStatus: datosCFDI.supplierInvoiceStatus || "5",
+                    SupplierInvoiceStatus: datosCFDI.sInvoiceStatus || "5",
                     CFDIData: {
                         UUID: datosCFDI.UUID,
                         FOLIO: String(datosCFDI.FOLIO),
@@ -795,6 +808,39 @@ sap.ui.define([
                 );
 
             }
+        },
+
+        _getDeviationConfirmation(aDeviations, nMaxQntyTolerance) {
+            const nDeviation = aDeviations[0];
+            const pConfirmation = new Promise((resolve) => {
+                const oDialog = new Dialog({
+                    type: "Message",
+                    title: "Desviación",
+                    content: new Text({ text: `La diferencia ${nDeviation} supera la desviación máxima ${nMaxQntyTolerance}` }),
+                    beginButton: new Button({
+                        type: "Emphasized",
+                        text: "Enviar con desviación",
+                        press: function () {
+                            resolve("Enviar");
+                            oDialog.close();
+                        }.bind(this)
+                    }),
+                    endButton: new Button({
+                        text: "Cargar otra factura",
+                        press: function () {
+                            resolve("Cancelar");
+                            oDialog.close();
+                        }.bind(this)
+                    }),
+                    afterClose: function () {
+                        oDialog.destroy();
+                    }
+                });
+
+                oDialog.open();
+            });
+
+            return pConfirmation;
         },
 
         _convertFileToBase64: function (file) {

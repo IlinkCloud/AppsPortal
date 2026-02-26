@@ -660,7 +660,10 @@ sap.ui.define([
         _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
             const oTable = this.getView().byId("docMatList");
             const aSelected = oTable.getSelectedItems();
-            const nMaxQntyTolerance = 150;
+
+            const nMinTolerance = 150;
+            const nMaxTolerance = 150;
+
             const aDeviations = [];
             let sInvoiceStatus = "5";
 
@@ -668,17 +671,25 @@ sap.ui.define([
                 const oElement = aSelected[i];
                 const oContext = oElement.getBindingContext("documents");
                 const oData = oContext.getObject();
-                const nTotalWithTax = oData.EffectiveAmount + (oData.EffectiveAmount * 0.16);
 
-                if (nTotalWithTax + nMaxQntyTolerance < Number(datosCFDI.TOTAL)) {
-                    const nDeviation = Math.abs(nTotalWithTax - Number(datosCFDI.TOTAL));
+                // Calculamos el total esperado (Importe + IVA 16%)
+                const nTotalWithTax = oData.EffectiveAmount + (oData.EffectiveAmount * 0.16);
+                const nInvoiceTotal = Number(datosCFDI.TOTAL);
+
+                // Calculamos los límites aceptables
+                const nLowerLimit = nTotalWithTax - nMinTolerance;
+                const nUpperLimit = nTotalWithTax + nMaxTolerance;
+
+                // === CORRECCIÓN: Validar si está FUERA del rango ===
+                if (nTotalWithTax < nLowerLimit || nTotalWithTax > nUpperLimit) {
+                    const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
                     aDeviations.push(nDeviation);
                     break;
                 }
             }
 
             if (aDeviations.length > 0) {
-                const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxQntyTolerance);
+                const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxTolerance);
                 if (sResponse === "Cancelar") {
                     return;
                 } else {
@@ -689,7 +700,6 @@ sap.ui.define([
             BusyIndicator.show(100);
 
             try {
-
                 const payload = {
                     "Items": datosCFDI.Items,
                     "Reference": datosCFDI.ReferenceDocument,
@@ -719,17 +729,15 @@ sap.ui.define([
 
                 const res = await fetch("/odata/v4/goods-receipts/CreateSupplierInvoiceFromList", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
                     body: JSON.stringify(payload),
                     credentials: "include"
                 });
 
                 if (!res.ok) {
                     const errText = await res.text();
-                    MessageBox.error("Error al subir a MIRO:\n" + errText);
+                    const userMessage = this._formatErrorMessage(errText, datosCFDI.CURRENCY);
+                    sap.m.MessageBox.error(userMessage);
                     BusyIndicator.hide();
                     return;
                 }
@@ -737,6 +745,7 @@ sap.ui.define([
                 const data = await res.json();
                 const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
                 const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
+
                 const aResults = [
                     {
                         label: "Factura a MIRO",
@@ -755,11 +764,30 @@ sap.ui.define([
                         message: oMessageXML.message,
                         icon: "sap-icon://excel-attachment",
                         success: oMessageXML.success
-                    },
+                    }
                 ];
 
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
+
+                // === CORRECCIÓN 1: Obtener proveedores para recargar tabla ===
+                const oModel = this.getView().getModel();
+                const aSuppliers = (oModel.getProperty("/UsrsDatos") || []).map(u => ({
+                    BusinessPartner: u.UserID,
+                    SupplierName: u.UserNombre,
+                    Supplier: u.UserID,
+                    CompanyCode: u.CompanyCode,
+                    CompanyCodeName: u.Client
+                }));
+
+                // === CORRECCIÓN 2: Recargar tabla ANTES de cerrar diálogos ===
+                await this.getReadGoodsReceipt(aSuppliers);
+
+                // === CORRECCIÓN 3: Cerrar diálogo de resumen (con ID o referencia) ===
+                if (this._oResumenDialog) {
+                    this._oResumenDialog.close();
+                }
+
             } catch (err) {
                 console.error("[_subirAFI] Error:", err);
                 MessageBox.error("Error al subir factura a MIRO:\n" + (err.message || "Error desconocido"));
@@ -847,6 +875,82 @@ sap.ui.define([
             return pConfirmation;
         },
 
+        mostrarError: function (errText, CURRENCY) {
+            const balanceLineMatch = errText.match(/Balance not zero:[^]+credits:\s[\d.,]+/);
+
+            if (balanceLineMatch) {
+                const balanceLine = balanceLineMatch[0];
+                const match = balanceLine.match(/debits:\s([\d.,]+)\s+credits:\s([\d.,]+)/);
+                console.log("Entrando a mostrar mensaje de balance");
+                if (match) {
+                    const debits = parseFloat(match[1].replace(/,/g, ""));
+                    const credits = parseFloat(match[2].replace(/,/g, ""));
+                    const diff = (debits - credits).toFixed(2);
+
+                    sap.m.MessageBox.error(
+                        `El balance contable no cuadra.\n` +
+                        `Débitos: ${debits.toLocaleString("es-MX")} ${CURRENCY}\n` +
+                        `Créditos: ${credits.toLocaleString("es-MX")} ${CURRENCY}\n` +
+                        `Diferencia: ${diff.toLocaleString("es-MX")} ${CURRENCY}`
+                    );
+                    return;
+                }
+            }
+
+            // Caso TaxCode faltante
+            if (errText.includes("Enter a tax code in item") || errText.includes("Falta TaxCode")) {
+                sap.m.MessageBox.error(
+                    "La orden de compra seleccionada no tiene código de impuesto configurado.\n" +
+                    "Contacte al equipo de finanzas para corregirlo en S/4HANA."
+                );
+                return;
+            }
+
+            // Internal Server Error
+            if (errText.includes("Internal Server Error")) {
+                sap.m.MessageBox.error(
+                    "Ocurrió un error interno en el servidor. Intente nuevamente o contacte al área de soporte."
+                );
+                return;
+            }
+
+            // Otros errores genéricos
+            sap.m.MessageBox.error("Error al registrar la factura:\n" + errText);
+        },
+
+        _formatErrorMessage: function (errText, currency) {
+            const cleanText = errText.replace(/\n/g, " ").trim();
+
+            // Balance contable
+            const balanceMatch = cleanText.match(/Balance not zero.*?debits:\s([\d.,]+)\s+credits:\s([\d.,]+)/);
+            if (balanceMatch) {
+                const debits = parseFloat(balanceMatch[1].replace(/,/g, ""));
+                const credits = parseFloat(balanceMatch[2].replace(/,/g, ""));
+                const diff = (debits - credits).toFixed(2);
+                return `El balance contable no cuadra.\nDébitos: ${debits.toLocaleString("es-MX")} ${currency}\nCréditos: ${credits.toLocaleString("es-MX")} ${currency}\nDiferencia: ${diff.toLocaleString("es-MX")} ${currency}`;
+            }
+
+            // Duplicado de factura
+            const duplicateMatch = cleanText.match(/potential duplicate exists \(inv\. (\d+) (\d{4})\)/);
+            if (duplicateMatch) {
+                const invoiceNumber = duplicateMatch[1];
+                const year = duplicateMatch[2];
+                return `La factura no se creó automáticamente porque ya existe un posible duplicado.\nFactura existente: ${invoiceNumber} (${year}).`;
+            }
+
+            // TaxCode faltante
+            if (cleanText.includes("Enter a tax code in item") || cleanText.includes("Falta TaxCode")) {
+                return "La orden de compra seleccionada no tiene código de impuesto configurado.\nContacte al equipo de finanzas para corregirlo en S/4HANA.";
+            }
+
+            // Internal Server Error
+            if (cleanText.includes("Internal Server Error")) {
+                return "Ocurrió un error interno en el servidor. Intente nuevamente o contacte al área de soporte.";
+            }
+
+            // Otros errores
+            return "Error al registrar la factura:\n" + cleanText;
+        },
 
         onFileSelected: function (oEvent) {
             const files = oEvent.getParameter("files");
