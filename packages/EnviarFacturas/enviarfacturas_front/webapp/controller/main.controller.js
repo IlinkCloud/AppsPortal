@@ -681,7 +681,7 @@ sap.ui.define([
                 const nUpperLimit = nTotalWithTax + nMaxTolerance;
 
                 // === CORRECCIÓN: Validar si está FUERA del rango ===
-                if (nTotalWithTax < nLowerLimit || nTotalWithTax > nUpperLimit) {
+                if (nInvoiceTotal < nLowerLimit || nInvoiceTotal > nUpperLimit) {
                     const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
                     aDeviations.push(nDeviation);
                     break;
