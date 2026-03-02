@@ -618,6 +618,77 @@ sap.ui.define([
             oDialog.open();
         },
 
+        // === Validar tolerancia con impuesto real (se ejecuta ANTES de subir) ===
+        _validateToleranceWithTax: async function (aSelected, datosCFDI) {
+            console.log(`\n[Tolerancia] === INICIANDO VALIDACIÓN ===`);
+            console.log(`[Tolerancia] Documentos seleccionados: ${aSelected.length}`);
+            console.log(`[Tolerancia] Total CFDI: ${datosCFDI.TOTAL}`);
+
+            const nMinTolerance = 150;
+            const nMaxTolerance = 150;
+            const aDeviations = [];
+
+            for (let i = 0; i < aSelected.length; i++) {
+                const oElement = aSelected[i];
+                const oContext = oElement.getBindingContext("documents");
+                const oData = oContext.getObject();
+
+                console.log(`\n[Tolerancia] --- Documento ${i + 1} ---`);
+                console.log(`[Tolerancia] PO: ${oData.PurchaseOrder}`);
+                console.log(`[Tolerancia] EffectiveAmount: ${oData.EffectiveAmount}`);
+
+                try {
+                    // Obtener tasa de impuesto con fallback inmediato
+                    const taxRate = await this._getTaxRateFromPO(oData.PurchaseOrder).catch(err => {
+                        console.warn(`[TaxRate] Fallback por error: ${err.message}`);
+                        return 0.16; // Fallback seguro
+                    });
+
+                    console.log(`[Tolerancia] TaxRate usado: ${(taxRate * 100).toFixed(2)}%`);
+
+                    const nTotalWithTax = oData.EffectiveAmount * (1 + taxRate);
+                    const nInvoiceTotal = Number(datosCFDI.TOTAL);
+
+                    console.log(`[Tolerancia] Cálculo:`);
+                    console.log(`   EffectiveAmount: ${oData.EffectiveAmount}`);
+                    console.log(`   TaxRate: ${taxRate}`);
+                    console.log(`   Total con impuesto: ${nTotalWithTax.toFixed(2)}`);
+                    console.log(`   Total factura: ${nInvoiceTotal}`);
+
+                    const nLowerLimit = nTotalWithTax - nMinTolerance;
+                    const nUpperLimit = nTotalWithTax + nMaxTolerance;
+
+                    console.log(`[Tolerancia] Límites:`);
+                    console.log(`   Límite inferior: ${nLowerLimit.toFixed(2)}`);
+                    console.log(`   Límite superior: ${nUpperLimit.toFixed(2)}`);
+
+                    if (nInvoiceTotal < nLowerLimit || nInvoiceTotal > nUpperLimit) {
+                        const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
+                        console.log(`[Tolerancia] DESVIACIÓN DETECTADA: ${nDeviation.toFixed(2)}`);
+
+                        aDeviations.push({
+                            po: oData.PurchaseOrder,
+                            expected: nTotalWithTax,
+                            received: nInvoiceTotal,
+                            deviation: nDeviation,
+                            taxRate: taxRate * 100
+                        });
+                    } else {
+                        console.log(`[Tolerancia] Dentro del rango aceptable`);
+                    }
+
+                } catch (err) {
+                    console.warn(`[Tolerancia] Error en PO ${oData.PurchaseOrder}: ${err.message}`);
+                    continue; // Continuar con siguiente ítem
+                }
+            }
+
+            console.log(`\n[Tolerancia] === FIN VALIDACIÓN ===`);
+            console.log(`[Tolerancia] Desviaciones encontradas: ${aDeviations.length}`);
+
+            return aDeviations;
+        },
+
         _verPDF: function (oFile) {
             if (!oFile) {
                 sap.m.MessageToast.show("No hay archivo para visualizar");
@@ -657,6 +728,53 @@ sap.ui.define([
                 : d.toISOString();
         },
 
+        _getTaxRateFromPO: async function (purchaseOrder) {
+            console.log(`[TaxRate] Iniciando consulta para PO: ${purchaseOrder}`);
+            try {
+                const url = `/odata/v4/goods-receipts/GetTaxRateFromPO?purchaseOrder=${encodeURIComponent(purchaseOrder)}`;
+                console.log(`[TaxRate] URL: ${url}`);
+                /* 
+                                // Timeout de 5 segundos para no bloquear
+                                const controller = new AbortController();
+                                const timeout = setTimeout(() => controller.abort(), 5000); */
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                    //signal: controller.signal
+                });
+                //clearTimeout(timeout);
+
+                console.log(`[TaxRate] Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    console.warn(`[TaxRate] HTTP ${response.status} para PO ${purchaseOrder}`);
+                    return 0.16; // Fallback
+                }
+
+                const data = await response.json();
+                console.log(`[TaxRate] Response data:`, data);
+
+                const taxRateDecimal = data.value?.[0]?.TaxRateDecimal;
+                const conditionRateRatio = data.value?.[0]?.ConditionRateRatio;
+
+                console.log(`[TaxRate] TaxRateDecimal: ${taxRateDecimal}, ConditionRateRatio: ${conditionRateRatio}`);
+
+                if (typeof taxRateDecimal === 'number' && !isNaN(taxRateDecimal)) {
+                    console.log(`[TaxRate] PO ${purchaseOrder}: ${(taxRateDecimal * 100).toFixed(2)}%`);
+                    return taxRateDecimal;
+                }
+
+                console.warn(`[TaxRate] Fallback a 16% para PO ${purchaseOrder}`);
+                return 0.16; // Fallback si no hay dato válido
+
+            } catch (err) {
+                console.error(`[TaxRate] Error para PO ${purchaseOrder}: ${err.message}`);
+                return 0.16; // Fallback seguro - NUNCA lanza error
+            }
+        },
+
         _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
             const oTable = this.getView().byId("docMatList");
             const aSelected = oTable.getSelectedItems();
@@ -664,32 +782,11 @@ sap.ui.define([
             const nMinTolerance = 150;
             const nMaxTolerance = 150;
 
-            const aDeviations = [];
             let sInvoiceStatus = "5";
-
-            for (let i = 0; i < aSelected.length; i++) {
-                const oElement = aSelected[i];
-                const oContext = oElement.getBindingContext("documents");
-                const oData = oContext.getObject();
-
-                // Calculamos el total esperado (Importe + IVA 16%)
-                const nTotalWithTax = oData.EffectiveAmount + (oData.EffectiveAmount * 0.16);
-                const nInvoiceTotal = Number(datosCFDI.TOTAL);
-
-                // Calculamos los límites aceptables
-                const nLowerLimit = nTotalWithTax - nMinTolerance;
-                const nUpperLimit = nTotalWithTax + nMaxTolerance;
-
-                // === CORRECCIÓN: Validar si está FUERA del rango ===
-                if (nInvoiceTotal < nLowerLimit || nInvoiceTotal > nUpperLimit) {
-                    const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
-                    aDeviations.push(nDeviation);
-                    break;
-                }
-            }
+            const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
 
             if (aDeviations.length > 0) {
-                const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxTolerance);
+                const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxTolerance, nMinTolerance);
                 if (sResponse === "Cancelar") {
                     return;
                 } else {
@@ -770,7 +867,7 @@ sap.ui.define([
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
 
-                // === CORRECCIÓN 1: Obtener proveedores para recargar tabla ===
+                // ===Obtener proveedores para recargar tabla ===
                 const oModel = this.getView().getModel();
                 const aSuppliers = (oModel.getProperty("/UsrsDatos") || []).map(u => ({
                     BusinessPartner: u.UserID,
@@ -780,10 +877,10 @@ sap.ui.define([
                     CompanyCodeName: u.Client
                 }));
 
-                // === CORRECCIÓN 2: Recargar tabla ANTES de cerrar diálogos ===
+                // ===Recargar tabla ANTES de cerrar diálogos ===
                 await this.getReadGoodsReceipt(aSuppliers);
 
-                // === CORRECCIÓN 3: Cerrar diálogo de resumen (con ID o referencia) ===
+                // ===Cerrar diálogo de resumen (con ID o referencia) ===
                 if (this._oResumenDialog) {
                     this._oResumenDialog.close();
                 }
@@ -842,13 +939,43 @@ sap.ui.define([
             });
         },
 
-        _getDeviationConfirmation(aDeviations, nMaxQntyTolerance) {
-            const nDeviation = aDeviations[0];
+        _getDeviationConfirmation(aDeviations, nMaxQntyTolerance, nMinQntyTolerance) {
+            // === CORRECCIÓN: Extraer datos de la desviación ===
+            const firstDeviation = aDeviations[0];
+            const nDeviation = typeof firstDeviation === 'object'
+                ? firstDeviation.deviation
+                : firstDeviation;
+
+            const po = typeof firstDeviation === 'object' ? firstDeviation.po : null;
+            const expected = typeof firstDeviation === 'object' ? firstDeviation.expected : null;
+            const received = typeof firstDeviation === 'object' ? firstDeviation.received : null;
+
+            // === Determinar tipo de desviación ===
+            const isAboveMax = nDeviation > nMaxQntyTolerance;
+            const isBelowMin = nMinQntyTolerance !== undefined && nDeviation < nMinQntyTolerance;
+
+            // === Construir mensaje según el caso ===
+            let sMessage = '';
+            if (isAboveMax) {
+                sMessage = po
+                    ? `La diferencia de ${nDeviation.toFixed(2)} supera la desviación máxima ${nMaxQntyTolerance}
+Esperado: ${expected?.toFixed(2)} | Recibido: ${received?.toFixed(2)}`
+                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} supera la desviación máxima ${nMaxQntyTolerance}`;
+            } else if (isBelowMin) {
+                sMessage = po
+                    ? `La diferencia de ${nDeviation.toFixed(2)} está por debajo de la desviación mínima ${nMinQntyTolerance}
+Esperado: ${expected?.toFixed(2)} | Recibido: ${received?.toFixed(2)}`
+                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está por debajo de la desviación mínima ${nMinQntyTolerance}`;
+            } else {
+                // Caso por defecto
+                sMessage = `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está fuera del rango aceptable`;
+            }
+
             const pConfirmation = new Promise((resolve) => {
                 const oDialog = new Dialog({
                     type: "Message",
-                    title: "Desviación",
-                    content: new Text({ text: `La diferencia ${nDeviation} supera la desviación máxima ${nMaxQntyTolerance}` }),
+                    title: isAboveMax ? "Desviación Máxima" : "Desviación Mínima",
+                    content: new Text({ text: sMessage }),
                     beginButton: new Button({
                         type: "Emphasized",
                         text: "Enviar con desviación",
@@ -868,10 +995,8 @@ sap.ui.define([
                         oDialog.destroy();
                     }
                 });
-
                 oDialog.open();
             });
-
             return pConfirmation;
         },
 
