@@ -429,22 +429,29 @@ sap.ui.define([
                                             const data = await res.json();
                                             if (data.valido) {
                                                 if (data.datos) {
-                                                    const oContext = aSelected[0].getBindingContext("documents");
-                                                    const oData = oContext.getObject();
+                                                    const oTable = oController.byId("docMatList");
+                                                    const aSelected = oTable.getSelectedItems();
 
-                                                    data.datos.Items = [{
-                                                        MaterialDocument: oData.MaterialDocument || "",
-                                                        MaterialDocumentItem: oData.MaterialDocumentItem || "1",
-                                                        PurchaseOrder: oData.PurchaseOrder,
-                                                        PurchaseOrderItem: String(oData.PurchaseOrderItem),
-                                                        Supplier: oData.Supplier || data.datos.SUPPLIER,
-                                                        Plant: oData.Plant || data.datos.SOCIETY,
-                                                        QuantityInEntryUnit: oData.QuantityInEntryUnit || 1
-                                                    }];
+                                                    // ===Construir Items con Importe para TODOS los casos ===
+                                                    data.datos.Items = aSelected.map(oElement => {
+                                                        const oContext = oElement.getBindingContext("documents");
+                                                        const oData = oContext.getObject();
+                                                        return {
+                                                            MaterialDocument: oData.MaterialDocument || "",
+                                                            MaterialDocumentItem: oData.MaterialDocumentItem || "1",
+                                                            PurchaseOrder: oData.PurchaseOrder,
+                                                            PurchaseOrderItem: String(oData.PurchaseOrderItem),
+                                                            Supplier: oData.Supplier || data.datos.SUPPLIER,
+                                                            Plant: oData.Plant || data.datos.SOCIETY,
+                                                            QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
+                                                            Importe: oData.EffectiveAmount || 0
+                                                        };
+                                                    });
 
-                                                    data.datos.ReferenceDocument = oData.ReferenceDocument;
+                                                    data.datos.ReferenceDocument = aSelected.length > 0
+                                                        ? aSelected[0].getBindingContext("documents").getObject().ReferenceDocument
+                                                        : "";
                                                     data.datos.FixedUUID = data.datos.Comprobante?.['cfdi:CfdiRelacionados']?.['cfdi:CfdiRelacionado']?.['@_UUID'] || null;
-
                                                     oController._mostrarResumenCFDI(data.datos, pdfFile, xmlFile);
                                                 }
                                             } else {
@@ -628,29 +635,53 @@ sap.ui.define([
             const nMaxTolerance = 150;
             const aDeviations = [];
 
+            // === Agrupar líneas por PurchaseOrder ===
+            const poGroups = new Map();
+
             for (let i = 0; i < aSelected.length; i++) {
                 const oElement = aSelected[i];
                 const oContext = oElement.getBindingContext("documents");
                 const oData = oContext.getObject();
+                const po = oData.PurchaseOrder;
 
-                console.log(`\n[Tolerancia] --- Documento ${i + 1} ---`);
-                console.log(`[Tolerancia] PO: ${oData.PurchaseOrder}`);
-                console.log(`[Tolerancia] EffectiveAmount: ${oData.EffectiveAmount}`);
+                if (!poGroups.has(po)) {
+                    poGroups.set(po, {
+                        po: po,
+                        items: [],
+                        totalEffectiveAmount: 0,
+                        lines: []
+                    });
+                }
+
+                const group = poGroups.get(po);
+                group.items.push(oData.PurchaseOrderItem);
+                group.totalEffectiveAmount += Number(oData.EffectiveAmount) || 0;
+                group.lines.push(oElement);
+            }
+
+            console.log(`[Tolerancia] Órdenes de compra agrupadas: ${poGroups.size}`);
+
+            // === Validar cada grupo de PO ===
+            for (const [poKey, group] of poGroups) {
+                console.log(`\n[Tolerancia] --- PO: ${poKey} ---`);
+                console.log(`[Tolerancia] Items: ${group.items.join(', ')}`);
+                console.log(`[Tolerancia] Total EffectiveAmount agrupado: ${group.totalEffectiveAmount.toFixed(2)}`);
 
                 try {
-                    // Obtener tasa de impuesto con fallback inmediato
-                    const taxRate = await this._getTaxRateFromPO(oData.PurchaseOrder).catch(err => {
+                    // Obtener tasa de impuesto (usar la primera línea del grupo)
+                    const taxRate = await this._getTaxRateFromPO(poKey).catch(err => {
                         console.warn(`[TaxRate] Fallback por error: ${err.message}`);
-                        return 0.16; // Fallback seguro
+                        return 0.16;
                     });
 
                     console.log(`[Tolerancia] TaxRate usado: ${(taxRate * 100).toFixed(2)}%`);
 
-                    const nTotalWithTax = oData.EffectiveAmount * (1 + taxRate);
+                    // Calcular total con impuesto basado en la SUMA de todas las líneas
+                    const nTotalWithTax = group.totalEffectiveAmount * (1 + taxRate);
                     const nInvoiceTotal = Number(datosCFDI.TOTAL);
 
                     console.log(`[Tolerancia] Cálculo:`);
-                    console.log(`   EffectiveAmount: ${oData.EffectiveAmount}`);
+                    console.log(`   Total EffectiveAmount (suma): ${group.totalEffectiveAmount.toFixed(2)}`);
                     console.log(`   TaxRate: ${taxRate}`);
                     console.log(`   Total con impuesto: ${nTotalWithTax.toFixed(2)}`);
                     console.log(`   Total factura: ${nInvoiceTotal}`);
@@ -667,19 +698,20 @@ sap.ui.define([
                         console.log(`[Tolerancia] DESVIACIÓN DETECTADA: ${nDeviation.toFixed(2)}`);
 
                         aDeviations.push({
-                            po: oData.PurchaseOrder,
+                            po: poKey,
+                            items: group.items,
                             expected: nTotalWithTax,
                             received: nInvoiceTotal,
                             deviation: nDeviation,
-                            taxRate: taxRate * 100
+                            taxRate: taxRate * 100,
+                            totalEffectiveAmount: group.totalEffectiveAmount
                         });
                     } else {
                         console.log(`[Tolerancia] Dentro del rango aceptable`);
                     }
-
                 } catch (err) {
-                    console.warn(`[Tolerancia] Error en PO ${oData.PurchaseOrder}: ${err.message}`);
-                    continue; // Continuar con siguiente ítem
+                    console.warn(`[Tolerancia] Error en PO ${poKey}: ${err.message}`);
+                    continue;
                 }
             }
 
@@ -778,11 +810,11 @@ sap.ui.define([
         _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
             const oTable = this.getView().byId("docMatList");
             const aSelected = oTable.getSelectedItems();
-
             const nMinTolerance = 150;
             const nMaxTolerance = 150;
-
             let sInvoiceStatus = "5";
+
+            // === Validar tolerancia (ahora agrupa por PO automáticamente) ===
             const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
 
             if (aDeviations.length > 0) {
@@ -797,9 +829,25 @@ sap.ui.define([
             BusyIndicator.show(100);
 
             try {
+                // === Construir Items desde las líneas seleccionadas ===
+                const aItems = aSelected.map(oElement => {
+                    const oContext = oElement.getBindingContext("documents");
+                    const oData = oContext.getObject();
+                    return {
+                        MaterialDocument: oData.MaterialDocument || "",
+                        MaterialDocumentItem: oData.MaterialDocumentItem || "1",
+                        PurchaseOrder: oData.PurchaseOrder,
+                        PurchaseOrderItem: String(oData.PurchaseOrderItem),
+                        Supplier: oData.Supplier || datosCFDI.SUPPLIER,
+                        Plant: oData.Plant || oData.CompanyCode,
+                        QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
+                        Importe: oData.EffectiveAmount || 0
+                    };
+                });
+
                 const payload = {
-                    "Items": datosCFDI.Items,
-                    "Reference": datosCFDI.ReferenceDocument,
+                    "Items": aItems,
+                    "Reference": aSelected.length > 0 ? aSelected[0].getBindingContext("documents").getObject().ReferenceDocument : "",
                     "FixedUUID": datosCFDI.UUID,
                     "SupplierInvoiceStatus": sInvoiceStatus,
                     "CFDIData": {
@@ -840,6 +888,8 @@ sap.ui.define([
                 }
 
                 const data = await res.json();
+
+                // === Adjuntar PDF y XML ===
                 const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
                 const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
 
@@ -867,7 +917,7 @@ sap.ui.define([
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
 
-                // ===Obtener proveedores para recargar tabla ===
+                // === Recargar tabla ===
                 const oModel = this.getView().getModel();
                 const aSuppliers = (oModel.getProperty("/UsrsDatos") || []).map(u => ({
                     BusinessPartner: u.UserID,
@@ -877,14 +927,12 @@ sap.ui.define([
                     CompanyCodeName: u.Client
                 }));
 
-                // ===Recargar tabla ANTES de cerrar diálogos ===
                 await this.getReadGoodsReceipt(aSuppliers);
 
-                // ===Cerrar diálogo de resumen (con ID o referencia) ===
+                // === Cerrar diálogo de resumen ===
                 if (this._oResumenDialog) {
                     this._oResumenDialog.close();
                 }
-
             } catch (err) {
                 console.error("[_subirAFI] Error:", err);
                 MessageBox.error("Error al subir factura a MIRO:\n" + (err.message || "Error desconocido"));
@@ -939,35 +987,43 @@ sap.ui.define([
             });
         },
 
-        _getDeviationConfirmation(aDeviations, nMaxQntyTolerance, nMinQntyTolerance) {
-            // === CORRECCIÓN: Extraer datos de la desviación ===
+        _getDeviationConfirmation: function (aDeviations, nMaxQntyTolerance, nMinQntyTolerance) {
+            // === Extraer datos de la desviación ===
             const firstDeviation = aDeviations[0];
             const nDeviation = typeof firstDeviation === 'object'
                 ? firstDeviation.deviation
                 : firstDeviation;
-
             const po = typeof firstDeviation === 'object' ? firstDeviation.po : null;
+            const items = typeof firstDeviation === 'object' ? firstDeviation.items : null;
             const expected = typeof firstDeviation === 'object' ? firstDeviation.expected : null;
             const received = typeof firstDeviation === 'object' ? firstDeviation.received : null;
+            const totalEffectiveAmount = typeof firstDeviation === 'object' ? firstDeviation.totalEffectiveAmount : null;
 
             // === Determinar tipo de desviación ===
             const isAboveMax = nDeviation > nMaxQntyTolerance;
             const isBelowMin = nMinQntyTolerance !== undefined && nDeviation < nMinQntyTolerance;
 
-            // === Construir mensaje según el caso ===
+            // === Construir mensaje ===
             let sMessage = '';
+            const itemsText = items ? ` (Items: ${items.join(', ')})` : '';
+
             if (isAboveMax) {
                 sMessage = po
-                    ? `La diferencia de ${nDeviation.toFixed(2)} supera la desviación máxima ${nMaxQntyTolerance}
-Esperado: ${expected?.toFixed(2)} | Recibido: ${received?.toFixed(2)}`
+                    ? `La diferencia de ${nDeviation.toFixed(2)} supera la desviación máxima ${nMaxQntyTolerance}\n` +
+                    `PO: ${po}${itemsText}\n` +
+                    `Total OC (sin impuestos): ${totalEffectiveAmount?.toFixed(2) || 'N/A'}\n` +
+                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
+                    `Recibido en factura: ${received?.toFixed(2)}`
                     : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} supera la desviación máxima ${nMaxQntyTolerance}`;
             } else if (isBelowMin) {
                 sMessage = po
-                    ? `La diferencia de ${nDeviation.toFixed(2)} está por debajo de la desviación mínima ${nMinQntyTolerance}
-Esperado: ${expected?.toFixed(2)} | Recibido: ${received?.toFixed(2)}`
+                    ? `La diferencia de ${nDeviation.toFixed(2)} está por debajo de la desviación mínima ${nMinQntyTolerance}\n` +
+                    `PO: ${po}${itemsText}\n` +
+                    `Total OC (sin impuestos): ${totalEffectiveAmount?.toFixed(2) || 'N/A'}\n` +
+                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
+                    `Recibido en factura: ${received?.toFixed(2)}`
                     : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está por debajo de la desviación mínima ${nMinQntyTolerance}`;
             } else {
-                // Caso por defecto
                 sMessage = `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está fuera del rango aceptable`;
             }
 
@@ -997,6 +1053,7 @@ Esperado: ${expected?.toFixed(2)} | Recibido: ${received?.toFixed(2)}`
                 });
                 oDialog.open();
             });
+
             return pConfirmation;
         },
 
