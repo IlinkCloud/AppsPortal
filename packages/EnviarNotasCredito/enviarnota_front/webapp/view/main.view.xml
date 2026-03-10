@@ -134,14 +134,14 @@
                                 <Text text="{documents>PurchaseOrder}" />
                                 <Text text="{documents>PurchaseOrderItem}" />
                                 <Text text="{documents>SupplierName}" />
-                                <Text text="{documents>CompanyCodeName}" />
+                                <Text text="{documents>Client}" />
                                 <Text text="{documents>ReferenceDocument}" />
                                 <Text
-                                    text="{path: 'documents>DocumentDate', formatter: '.formatDate'}"
+                                    text="{path: 'documents>DocumentDate', type:'sap.ui.model.type.Date', formatOptions:{style:'medium'}}"
                                 />
                                 <ObjectNumber
                                     number="{documents>EffectiveAmount}"
-                                    numberUnit="{documents>Currency}"
+                                    unit="{documents>DocumentCurrency}"
                                 />
                             </cells>
                         </ColumnListItem>

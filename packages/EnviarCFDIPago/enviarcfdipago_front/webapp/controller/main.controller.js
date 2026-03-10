@@ -10,19 +10,47 @@ sap.ui.define([
 
     return Controller.extend("enviarcfdipagofront.controller.main", {
         onInit() {
+            this._setDefaultDates();
             this.getPaymentComplements();
+        },
+
+        _setDefaultDates: function () {
+            const oToday = new Date();
+            const oStartOfYear = new Date(oToday.getFullYear(), 0, 1); // 1 de enero del año actual
+
+            const oStartDatePicker = this.byId("startDatePicker");
+            const oEndDatePicker = this.byId("endDatePicker");
+
+            // Establecer fechas en los DatePickers (sin aplicar filtro aún)
+            if (oStartDatePicker) oStartDatePicker.setDateValue(oStartOfYear);
+            if (oEndDatePicker) oEndDatePicker.setDateValue(oToday);
         },
 
         getPaymentComplements() {
             BusyIndicator.show(100);
-            let url = "/odata/v4/cfdipayment/ReadPaymentComplement()";
+
+            // === Obtener fechas de los DatePickers ===
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
+            const formatDate = (d) => d ? d.toISOString().split('T')[0] : null;
+
+            // === Construir URL con parámetros de fecha ===
+            let url = `/odata/v4/cfdipayment/ReadPaymentComplement`;
+            const params = [];
+            if (formatDate(oStart)) params.push(`FromDate=${formatDate(oStart)}`);
+            if (formatDate(oEnd)) params.push(`ToDate=${formatDate(oEnd)}`);
+            if (params.length > 0) url += `?${params.join('&')}`;
+
+            console.log("[getPaymentComplements] URL:", url);
 
             fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
                 .then(res => {
                     return res.ok ? res.json() : res.text().then(t => { throw new Error(t); });
                 })
                 .then(data => {
-                    const aData = data.value;
+                    const aData = data.value || [];
+
+                    console.log("[getPaymentComplements] Registros cargados:", aData.length);
 
                     let oModel = this.getView().getModel("PCModel");
                     if (!oModel) {
@@ -31,7 +59,6 @@ sap.ui.define([
                     }
                     oModel.setProperty("/paymentComplements", aData);
                     BusyIndicator.hide();
-
                 })
                 .catch(err => {
                     console.error("[getPaymentComplements] Error:", err);
@@ -66,6 +93,20 @@ sap.ui.define([
 
             this._showUploadFileDialog(aSelected);
 
+        },
+
+        onChangeDate: function () {
+            console.log("[onChangeDate] Fechas cambiadas, recargando datos del backend...");
+
+            // Obtener las fechas actuales de los DatePickers
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
+
+            console.log("[onChangeDate] Nueva fecha inicio:", oStart);
+            console.log("[onChangeDate] Nueva fecha fin:", oEnd);
+
+            // Recargar datos desde el backend con las nuevas fechas
+            this.getPaymentComplements();
         },
 
         _showUploadFileDialog(aSelected) {
@@ -218,7 +259,7 @@ sap.ui.define([
                                                 console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
                                             }
 
-                                             const res = await fetch(urlValidacion, {
+                                            const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",

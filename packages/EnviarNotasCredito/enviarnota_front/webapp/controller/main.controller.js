@@ -11,11 +11,23 @@ sap.ui.define([
     return Controller.extend("enviarnotafront.controller.main", {
         onInit: function () {
             this.getView().setModel(new sap.ui.model.json.JSONModel({ Sociedades: [] }), "sociedades");
-            this.getBusinessPartner();
+            this._setDefaultDates();
             this.getCreditNotesReceipt();
         },
 
-        getBusinessPartner: function () {
+        _setDefaultDates: function () {
+            const oToday = new Date();
+            const oStartOfYear = new Date(oToday.getFullYear(), 0, 1); // 1 de enero del año actual
+
+            const oStartDatePicker = this.byId("startDatePicker");
+            const oEndDatePicker = this.byId("endDatePicker");
+
+            // Establecer fechas en los DatePickers (sin aplicar filtro aún)
+            if (oStartDatePicker) oStartDatePicker.setDateValue(oStartOfYear);
+            if (oEndDatePicker) oEndDatePicker.setDateValue(oToday);
+        },
+
+        /* getBusinessPartner: function () {
             BusyIndicator.show(100);
             const url = "/odata/v4/invitacion/ReadSupplier";
             console.log("[getBusinessPartner] URL: ", url);
@@ -52,54 +64,38 @@ sap.ui.define([
                     MessageBox.error("Error al cargar destinatarios");
                     BusyIndicator.hide();
                 });
-        },
+        }, */
 
-        getCreditNotesReceipt: function (aSuppliers) {
+        getCreditNotesReceipt: function () {
             BusyIndicator.show(100);
-            const url = "/odata/v4/credit-notes-reception/ReadCreditNotesReceipt";
 
-            fetch(url, {
-                method: "GET",
-                headers: { "Accept": "application/json" },
-                credentials: "include"
-            })
+            // === Obtener fechas de los DatePickers ===
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
+            const formatDate = (d) => d ? d.toISOString().split('T')[0] : null;
+
+            let url = `/odata/v4/credit-notes-reception/ReadCreditNotesReceipt`;
+            const params = [];
+            if (formatDate(oStart)) params.push(`FromDate=${formatDate(oStart)}`);
+            if (formatDate(oEnd)) params.push(`ToDate=${formatDate(oEnd)}`);
+            if (params.length > 0) url += `?${params.join('&')}`;
+
+            fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
                 .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
                 .then(data => {
-                    console.log("[getCreditNotesReceipt] Datos crudos:", data);
-
-                    const aFacturas = (data.value || []).map(item => {
-                        const oSupplier = aSuppliers?.find(oSup => oSup.Supplier === item.Supplier);
-
-                        return {
-                            PurchaseOrder: item.PurchaseOrder,
-                            MaterialDocument: item.MaterialDocument,
-                            MaterialDocumentItem: item.MaterialDocumentItem,
-                            GoodsMovementType: item.GoodsMovementType || "",
-                            SupplierName: oSupplier?.SupplierName || "",
-                            Supplier: item.Supplier || "",
-                            Plant: item.Plant || "",
-                            CompanyCodeName: oSupplier?.CompanyCodeName || "",
-                            ReferenceDocument: item.ReferenceDocument,
-                            MaterialDocumentHeaderText: item.MaterialDocumentHeaderText,
-                            EffectiveAmount: item.EffectiveAmount || item.QuantityInEntryUnit || 0,
-                            DocumentDate: item.DocumentDate,
-                            PurchaseOrderItem: item.PurchaseOrderItem || null,
-                            Currency: item.DocumentCurrency,
-                            HoldingTaxType: item.HoldingTaxType,
-                            HoldingTaxCode: item.HoldingTaxCode
-                        };
-                    });
-
-                    this._aAllDocs = aFacturas.slice();
+                    const aFacturas = (data.value || []).map(item => ({
+                        ...item,
+                        DocumentDate: item.DocumentDate ? new Date(item.DocumentDate.replace(/Z$/, '')) : null
+                    }));
                     this.getView().setModel(
                         new sap.ui.model.json.JSONModel({ results: aFacturas }),
                         "documents"
                     );
-
                     BusyIndicator.hide();
                 })
                 .catch(err => {
-                    console.error("[getCreditNotesReceipt] Error:", err)
+                    console.error("[getCreditNotesReceipt] Error:", err);
+                    MessageBox.error("Error al cargar documentos");
                     BusyIndicator.hide();
                 });
         },
@@ -186,25 +182,17 @@ sap.ui.define([
         },
 
         onChangeDate: function () {
-            const oTable = this.byId("docMatList");
-            const oBinding = oTable.getBinding("items");
+            console.log("[onChangeDate] Fechas cambiadas, recargando datos del backend...");
 
-            const oStart = this.byId("startDatePicker").getDateValue();
-            const oEnd = this.byId("endDatePicker").getDateValue();
+            // Obtener las fechas actuales de los DatePickers
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
 
-            const aFilters = [];
+            console.log("[onChangeDate] Nueva fecha inicio:", oStart);
+            console.log("[onChangeDate] Nueva fecha fin:", oEnd);
 
-            if (oStart) {
-                aFilters.push(new sap.ui.model.Filter("DocumentDate", sap.ui.model.FilterOperator.GE, this.formatDateForBackend(oStart)));
-            }
-            if (oEnd) {
-                aFilters.push(new sap.ui.model.Filter("DocumentDate", sap.ui.model.FilterOperator.LE, this.formatDateForBackend(oEnd)));
-            }
-            const oFinalFilter = new sap.ui.model.Filter({
-                filters: aFilters,
-                and: true
-            });
-            oBinding.filter(oFinalFilter);
+            // Recargar datos desde el backend con las nuevas fechas
+            this.getCreditNotesReceipt();
         },
 
         filtrado: function (oEvent) {

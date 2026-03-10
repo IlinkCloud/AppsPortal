@@ -11,10 +11,23 @@ sap.ui.define([
 
     return Controller.extend("enviarfacturasfront.controller.main", {
         onInit() {
-            this.getBusinessPartner();
+            this._setDefaultDates();
+            this.getReadGoodsReceipt();
         },
 
-        getBusinessPartner: function () {
+        _setDefaultDates: function () {
+            const oToday = new Date();
+            const oStartOfYear = new Date(oToday.getFullYear(), 0, 1); // 1 de enero del año actual
+
+            const oStartDatePicker = this.byId("startDatePicker");
+            const oEndDatePicker = this.byId("endDatePicker");
+
+            // Establecer fechas en los DatePickers (sin aplicar filtro aún)
+            if (oStartDatePicker) oStartDatePicker.setDateValue(oStartOfYear);
+            if (oEndDatePicker) oEndDatePicker.setDateValue(oToday);
+        },
+
+        /* getBusinessPartner: function () {
             BusyIndicator.show(100);
             const url = "/odata/v4/invitacion/ReadSupplier";
             fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
@@ -37,7 +50,14 @@ sap.ui.define([
                     }
                     oModel.setProperty("/UsrsDatos", aContactos);
 
-                    this.getReadGoodsReceipt(data.value);
+                    // === Establecer fechas por defecto ANTES de cargar documentos ===
+                    this._setDefaultDates();
+
+                    // === Pasar fechas al backend ===
+                    const oStart = this.byId("startDatePicker").getDateValue();
+                    const oEnd = this.byId("endDatePicker").getDateValue();
+                    this.getReadGoodsReceipt(data.value, oStart, oEnd);
+
                     BusyIndicator.hide();
                 })
                 .catch(err => {
@@ -45,50 +65,39 @@ sap.ui.define([
                     MessageBox.error("Error al cargar destinatarios");
                     BusyIndicator.hide();
                 });
-        },
+        }, */
 
 
-        getReadGoodsReceipt: function (aSuppliers) {
+        getReadGoodsReceipt: function () {
             BusyIndicator.show(100);
-            const url = `/odata/v4/goods-receipts/ReadGoodsReceipt`;
+
+            // === Obtener fechas de los DatePickers ===
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
+            const formatDate = (d) => d ? d.toISOString().split('T')[0] : null;
+
+            let url = `/odata/v4/goods-receipts/ReadGoodsReceipt`;
+            const params = [];
+            if (formatDate(oStart)) params.push(`FromDate=${formatDate(oStart)}`);
+            if (formatDate(oEnd)) params.push(`ToDate=${formatDate(oEnd)}`);
+            if (params.length > 0) url += `?${params.join('&')}`;
 
             fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
-                .then(res => {
-                    return res.ok ? res.json() : res.text().then(t => { throw new Error(t); });
-                })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
                 .then(data => {
-                    const aFacturas = (data.value || []).map(item => {
-
-                        const oSupplier = aSuppliers.find(oSup => oSup.Supplier === item.Supplier);
-
-                        return {
-                            MaterialDocument: item.MaterialDocument,
-                            MaterialDocumentItem: item.MaterialDocumentItem,
-                            PurchaseOrder: item.PurchaseOrder,
-                            PurchaseOrderItem: item.PurchaseOrderItem,
-                            SupplierName: oSupplier?.SupplierName,
-                            Client: oSupplier?.CompanyCodeName,
-                            ReferenceDocument: item.ReferenceDocument,
-                            Condition: "",
-                            MaterialDocumentHeaderText: item.MaterialDocumentHeaderText,
-                            DocumentDate: new Date(item.DocumentDate.replace(/Z$/, '')),
-                            QuantityInEntryUnit: parseFloat(item.QuantityInEntryUnit) || 0.0,
-                            CompanyCode: oSupplier?.CompanyCode,
-                            Supplier: oSupplier?.Supplier,
-                            EffectiveAmount: item.EffectiveAmount,
-                            DocumentCurrency: item.DocumentCurrency
-                        }
-                    });
-
+                    const aFacturas = (data.value || []).map(item => ({
+                        ...item,
+                        DocumentDate: item.DocumentDate ? new Date(item.DocumentDate.replace(/Z$/, '')) : null
+                    }));
                     this.getView().setModel(
                         new sap.ui.model.json.JSONModel({ results: aFacturas }),
                         "documents"
                     );
-
                     BusyIndicator.hide();
                 })
                 .catch(err => {
-                    console.error("[getReadGoodsReceipt] Error:", err)
+                    console.error("[getReadGoodsReceipt] Error:", err);
+                    MessageBox.error("Error al cargar documentos");
                     BusyIndicator.hide();
                 });
         },
@@ -203,27 +212,17 @@ sap.ui.define([
         },
 
         onChangeDate: function () {
-            const oTable = this.byId("docMatList");
-            const oBinding = oTable.getBinding("items");
+            console.log("[onChangeDate] Fechas cambiadas, recargando datos del backend...");
 
-            const oStart = this.byId("startDatePicker").getDateValue();
-            const oEnd = this.byId("endDatePicker").getDateValue();
+            // Obtener las fechas actuales de los DatePickers
+            const oStart = this.byId("startDatePicker")?.getDateValue();
+            const oEnd = this.byId("endDatePicker")?.getDateValue();
 
-            const aFilters = [];
+            console.log("[onChangeDate] Nueva fecha inicio:", oStart);
+            console.log("[onChangeDate] Nueva fecha fin:", oEnd);
 
-            if (oStart) {
-                aFilters.push(new sap.ui.model.Filter("DocumentDate", sap.ui.model.FilterOperator.GE, oStart));
-            }
-            if (oEnd) {
-                aFilters.push(new sap.ui.model.Filter("DocumentDate", sap.ui.model.FilterOperator.LE, oEnd));
-            }
-
-            const oFinalFilter = new sap.ui.model.Filter({
-                filters: aFilters,
-                and: true
-            });
-
-            oBinding.filter(oFinalFilter);
+            // Recargar datos desde el backend con las nuevas fechas
+            this.getReadGoodsReceipt();
         },
 
         filtrado: function (oEvent) {
@@ -359,7 +358,6 @@ sap.ui.define([
                             }
                             BusyIndicator.show(100);
 
-                            // === CORRECCIÓN: Obtener datos del modelo actual, NO del contexto antiguo ===
                             const oTable = oController.byId("docMatList");
                             const aCurrentSelected = oTable.getSelectedItems();
 
@@ -444,7 +442,6 @@ sap.ui.define([
                                             const data = await res.json();
                                             if (data.valido) {
                                                 if (data.datos) {
-                                                    // === CORRECCIÓN: Usar selección actual ===
                                                     data.datos.Items = aCurrentSelected.map(oElement => {
                                                         const oContext = oElement.getBindingContext("documents");
                                                         const oData = oContext.getObject();
@@ -570,6 +567,7 @@ sap.ui.define([
 
         _mostrarResumenCFDI: function (datosCFDI, pdfFile, xmlFile) {
             const oDialog = new sap.m.Dialog({
+                id: "resumenCFDIDialog",
                 title: "Resumen CFDI",
                 content: [
                     new sap.m.Table({
@@ -627,8 +625,13 @@ sap.ui.define([
                 }),
                 afterClose: function () {
                     oDialog.destroy();
-                }
+                    // === Limpiar referencia ===
+                    this._oResumenDialog = null;
+                }.bind(this) // === Bind para acceder a this del controller ===
             });
+
+            // === GUARDAR REFERENCIA AL DIÁLOGO ===
+            this._oResumenDialog = oDialog;
 
             oDialog.open();
         },
@@ -924,17 +927,8 @@ sap.ui.define([
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
 
-                // === Recargar tabla ===
-                const oModel = this.getView().getModel();
-                const aSuppliers = (oModel.getProperty("/UsrsDatos") || []).map(u => ({
-                    BusinessPartner: u.UserID,
-                    SupplierName: u.UserNombre,
-                    Supplier: u.UserID,
-                    CompanyCode: u.CompanyCode,
-                    CompanyCodeName: u.Client
-                }));
-
-                await this.getReadGoodsReceipt(aSuppliers);
+                // === Recargar tabla (sin depender del modelo) ===
+                await this.getReadGoodsReceipt();
 
                 // === Cerrar diálogo de resumen ===
                 if (this._oResumenDialog) {

@@ -1,94 +1,320 @@
-<mvc:View controllerName="enviarcfdipagofront.controller.main" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout">
-   
-	<Page showHeader="true" title="{i18n>pay.title}" showFooter="false" showNavButton="true" navButtonPress="onNavBack"
-		class="sapUiContentPadding">
-		<content>
-			<Table sticky="HeaderToolbar,InfoToolbar,ColumnHeaders" noDataText="{i18n>pay.merchandise}" id="complPagoTbl"
-				headerText="{i18n>pay.docsMat}" mode="MultiSelect" alternateRowColors="true"
-				items="{PCModel>/paymentComplements}" selectionChange="validateSociety">
-				<infoToolbar>
-					<Toolbar width="100%" height="auto" design="Auto" visible="false" enabled="true">
-						<content>
-							<Label text="Label" design="Standard" width="100%" required="false" textAlign="Begin" textDirection="Inherit"/>
-						</content>
-					</Toolbar>
-				</infoToolbar>
-				<headerToolbar>
-					<Toolbar width="auto" height="46px" design="Auto" visible="true" enabled="true">
-						<content>
-							<Title text="{i18n>pay.received}" titleStyle="Auto" width="auto" textAlign="Begin" visible="true"/>
-							<ToolbarSpacer width=""/>
-							<SearchField value="" placeholder="{i18n>pay.search}" showSearchButton="true" visible="true" width="auto" search="onSearch"/>
-							<Select id="selectFilter">
-								<items>
-									<core:Item key="PaymentDocument" text="{i18n>pay.doc}"/>
-									<core:Item key="Client" text="{i18n>pay.client}" />
-									<core:Item key="Reference" text="{i18n>pay.reference}" />
-									<core:Item key="SupplierName" text="{i18n>pay.vendorName}" />
-								</items>
-							</Select>
-							<Button text="{i18n>pay.cfdi}" id="botonCF" type="Emphasized" icon="sap-icon://upload" iconFirst="true"
-								press="onUpload"/>
-							<Button xmlns:mvc="sap.ui.core.mvc" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout"
-								text="{i18n>pay.send}" id="button1" icon="sap-icon://discussion" type="Emphasized" press="aclaracionButton"/>
-						</content>
-						<tooltip/>
-					</Toolbar>
-				</headerToolbar>
-				<columns>
-					<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Phone" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
-						<header>
-							<Text text="{i18n>pay.doc}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-						</header>
-						<footer/>
-					</Column>
-					<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Phone" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
-						<header>
-							<Text text="{i18n>pay.vendorName}" width="auto" maxLines="3" wrapping="true" textAlign="Begin" textDirection="Inherit"/>
-						</header>
-						<footer/>
-					</Column>
-					<Column width="auto" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
-						<header>
-							<Text text="{i18n>pay.client}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-						</header>
-						<footer/>
-					</Column>
-					<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
-						<header>
-							<Text text="{i18n>pay.reference}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-						</header>
-						<footer/>
-					</Column>
-					<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
-						<header>
-							<Text text="{i18n>pay.date}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-						</header>
-						<footer/>
-					</Column>
-					<Column xmlns:mvc="sap.ui.core.mvc" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout"
-						xmlns="sap.m" width="auto" hAlign="Center" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline"
-						mergeDuplicates="false" id="column5">
-						<header>
-							<Text text="{i18n>pay.amount}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit" id="text11"/>
-						</header>
-						<footer/>
-					</Column>
-				</columns>
-				<items>
-					<ColumnListItem type="Active">
-						<cells>
-							<ObjectIdentifier title="{PCModel>PaymentDocument}" text="" titleActive="false" visible="true" />
-							<Text text="{PCModel>SupplierName}" wrapping="true" textAlign="Begin" textDirection="Inherit"/>
-							<Text xmlns="sap.m" text="{PCModel>Client}"/>
-							<Text text="{PCModel>Reference}" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-							<Text text="{path: 'PCModel>PaymentDate', formatter: '.formatDate'}" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
-							<ObjectNumber number="{parts: [{path: 'PCModel>Ammount'}, {path: 'PCModel>Currency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-								unit="{PCModel>Currency}" emphasized="false" state="None"/>
-						</cells>
-					</ColumnListItem>
-				</items>
-			</Table>
-		</content>
-	</Page>
+<mvc:View
+    controllerName="enviarcfdipagofront.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:unified="sap.ui.unified"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.commons.layout"
+>
+    <Page
+        showHeader="true"
+        title="{i18n>pay.title}"
+        showFooter="false"
+        showNavButton="true"
+        navButtonPress="onNavBack"
+        class="sapUiContentPadding"
+    >
+        <headerContent>
+            <FlexBox
+                width="100%"
+                alignItems="Start"
+                justifyContent="SpaceBetween"
+                id="__box0"
+            >
+                <items>
+                    <Toolbar>
+                        <ToolbarSpacer />
+                        <Label text="{i18n>complemento.de}" />
+                        <DatePicker
+                            id="startDatePicker"
+                            width="auto"
+                            change="onChangeDate"
+                        />
+                        <Label text="{i18n>complemento.hasta}" />
+                        <DatePicker
+                            id="endDatePicker"
+                            width="auto"
+                            change="onChangeDate"
+                        />
+                    </Toolbar>
+                </items>
+            </FlexBox>
+        </headerContent>
+
+        <content>
+            <Table
+                sticky="HeaderToolbar,InfoToolbar,ColumnHeaders"
+                noDataText="{i18n>pay.merchandise}"
+                id="complPagoTbl"
+                headerText="{i18n>pay.docsMat}"
+                mode="MultiSelect"
+                alternateRowColors="true"
+                items="{PCModel>/paymentComplements}"
+                selectionChange="validateSociety"
+            >
+                <infoToolbar>
+                    <Toolbar
+                        width="100%"
+                        height="auto"
+                        design="Auto"
+                        visible="false"
+                        enabled="true"
+                    >
+                        <content>
+                            <Label
+                                text="Label"
+                                design="Standard"
+                                width="100%"
+                                required="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </content>
+                    </Toolbar>
+                </infoToolbar>
+                <headerToolbar>
+                    <Toolbar
+                        width="auto"
+                        height="46px"
+                        design="Auto"
+                        visible="true"
+                        enabled="true"
+                    >
+                        <content>
+                            <Title
+                                text="{i18n>pay.received}"
+                                titleStyle="Auto"
+                                width="auto"
+                                textAlign="Begin"
+                                visible="true"
+                            />
+                            <ToolbarSpacer width="" />
+                            <SearchField
+                                value=""
+                                placeholder="{i18n>pay.search}"
+                                showSearchButton="true"
+                                visible="true"
+                                width="auto"
+                                search="onSearch"
+                            />
+                            <Select id="selectFilter">
+                                <items>
+                                    <core:Item
+                                        key="PaymentDocument"
+                                        text="{i18n>pay.doc}"
+                                    />
+                                    <core:Item
+                                        key="Client"
+                                        text="{i18n>pay.client}"
+                                    />
+                                    <core:Item
+                                        key="Reference"
+                                        text="{i18n>pay.reference}"
+                                    />
+                                    <core:Item
+                                        key="SupplierName"
+                                        text="{i18n>pay.vendorName}"
+                                    />
+                                </items>
+                            </Select>
+                            <Button
+                                text="{i18n>pay.cfdi}"
+                                id="botonCF"
+                                type="Emphasized"
+                                icon="sap-icon://upload"
+                                iconFirst="true"
+                                press="onUpload"
+                            />
+                            <Button
+                                xmlns:mvc="sap.ui.core.mvc"
+                                xmlns:unified="sap.ui.unified"
+                                xmlns:core="sap.ui.core"
+                                xmlns:layout="sap.ui.commons.layout"
+                                text="{i18n>pay.send}"
+                                id="button1"
+                                icon="sap-icon://discussion"
+                                type="Emphasized"
+                                press="aclaracionButton"
+                            />
+                        </content>
+                        <tooltip />
+                    </Toolbar>
+                </headerToolbar>
+                <columns>
+                    <Column
+                        width="auto"
+                        hAlign="Left"
+                        vAlign="Top"
+                        minScreenWidth="Phone"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.doc}"
+                                width="auto"
+                                maxLines="1"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                    <Column
+                        width="auto"
+                        hAlign="Left"
+                        vAlign="Top"
+                        minScreenWidth="Phone"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.vendorName}"
+                                width="auto"
+                                maxLines="3"
+                                wrapping="true"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                    <Column
+                        width="auto"
+                        vAlign="Top"
+                        minScreenWidth="Tablet"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.client}"
+                                width="auto"
+                                maxLines="1"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                    <Column
+                        width="auto"
+                        hAlign="Left"
+                        vAlign="Top"
+                        minScreenWidth="Tablet"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.reference}"
+                                width="auto"
+                                maxLines="1"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                    <Column
+                        width="auto"
+                        hAlign="Left"
+                        vAlign="Top"
+                        minScreenWidth="Tablet"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.date}"
+                                width="auto"
+                                maxLines="1"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                    <Column
+                        xmlns:mvc="sap.ui.core.mvc"
+                        xmlns:unified="sap.ui.unified"
+                        xmlns:core="sap.ui.core"
+                        xmlns:layout="sap.ui.commons.layout"
+                        xmlns="sap.m"
+                        width="auto"
+                        hAlign="Center"
+                        vAlign="Top"
+                        minScreenWidth="Tablet"
+                        demandPopin="true"
+                        popinDisplay="Inline"
+                        mergeDuplicates="false"
+                        id="column5"
+                    >
+                        <header>
+                            <Text
+                                text="{i18n>pay.amount}"
+                                width="auto"
+                                maxLines="1"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                                id="text11"
+                            />
+                        </header>
+                        <footer />
+                    </Column>
+                </columns>
+                <items>
+                    <ColumnListItem type="Active">
+                        <cells>
+                            <ObjectIdentifier
+                                title="{PCModel>PaymentDocument}"
+                                text=""
+                                titleActive="false"
+                                visible="true"
+                            />
+                            <Text
+                                text="{PCModel>SupplierName}"
+                                wrapping="true"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                            <Text
+                                xmlns="sap.m"
+                                text="{PCModel>Client}"
+                            />
+                            <Text
+                                text="{PCModel>Reference}"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                            <Text
+                                text="{path: 'PCModel>PaymentDate', formatter: '.formatDate'}"
+                                wrapping="false"
+                                textAlign="Begin"
+                                textDirection="Inherit"
+                            />
+                            <ObjectNumber
+                                number="{parts: [{path: 'PCModel>Ammount'}, {path: 'PCModel>Currency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
+                                unit="{PCModel>Currency}"
+                                emphasized="false"
+                                state="None"
+                            />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </content>
+    </Page>
 </mvc:View>
