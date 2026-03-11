@@ -112,13 +112,14 @@ sap.ui.define([
                 .catch(err => console.error("[postEstatusFactura] Error:", err));
         },
 
-        async postLogAttachmentPDF(file, documentId, supplier) {
+        async postLogAttachmentPDF(file, documentId, supplier, invoiceStatus) {
             const url = "/odata/v4/goods-receipts/AdjuntarFacturaPDF";
             const sFileBase64 = await this._fileToBase64(file);
             const oPayload = {
                 pdfBase64: sFileBase64,
                 documentId,
-                supplier
+                supplier,
+                "SupplierInvoiceStatus": invoiceStatus
             };
 
             try {
@@ -144,13 +145,14 @@ sap.ui.define([
             }
         },
 
-        async postLogAttachmentXML(file, documentId, supplier) {
+        async postLogAttachmentXML(file, documentId, supplier, invoiceStatus) {
             const url = "/odata/v4/goods-receipts/AdjuntarFacturaXML";
             const sFileBase64 = await this._fileToBase64(file);
             const oPayload = {
                 xmlBase64: sFileBase64,
                 documentId,
-                supplier
+                supplier,
+                "SupplierInvoiceStatus": invoiceStatus
             };
 
             try {
@@ -900,8 +902,8 @@ sap.ui.define([
                 const data = await res.json();
 
                 // === Adjuntar PDF y XML ===
-                const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
-                const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER);
+                const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus);
+                const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus);
 
                 const aResults = [
                     {
