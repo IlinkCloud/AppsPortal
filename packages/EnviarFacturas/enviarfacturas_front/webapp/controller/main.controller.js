@@ -444,6 +444,11 @@ sap.ui.define([
                                             const data = await res.json();
                                             if (data.valido) {
                                                 if (data.datos) {
+                                                    console.log('[ValidarFactura] Retenciones recibidas:', {
+                                                        tiene: !!data.datos.RetencionesConCodigos,
+                                                        longitud: Array.isArray(data.datos.RetencionesConCodigos) ? data.datos.RetencionesConCodigos.length : 'N/A',
+                                                        primerItem: Array.isArray(data.datos.RetencionesConCodigos) ? data.datos.RetencionesConCodigos[0] : null
+                                                    });
                                                     data.datos.Items = aCurrentSelected.map(oElement => {
                                                         const oContext = oElement.getBindingContext("documents");
                                                         const oData = oContext.getObject();
@@ -880,10 +885,17 @@ sap.ui.define([
                         PAYMENT_METHOD: String(datosCFDI.PAYMENT_METHOD),
                         CFDI_USE: datosCFDI.CFDI_USE,
                         ZED_RECEIPT_TYPE: datosCFDI.ZED_RECEIPT_TYPE,
-                        XML: datosCFDI.XML
+                        XML: datosCFDI.XML,
+                        RetencionesConCodigos: datosCFDI.RetencionesConCodigos && datosCFDI.RetencionesConCodigos.length > 0
+                            ? JSON.stringify(datosCFDI.RetencionesConCodigos)
+                            : null
                     }
                 };
-
+                console.log('[Debug] RetencionesConCodigos:', {
+                    tiene: !!datosCFDI.RetencionesConCodigos,
+                    longitud: datosCFDI.RetencionesConCodigos?.length,
+                    serializado: typeof payload.CFDIData.RetencionesConCodigos
+                });
                 const res = await fetch("/odata/v4/goods-receipts/CreateSupplierInvoiceFromList", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Accept": "application/json" },
@@ -902,8 +914,12 @@ sap.ui.define([
                 const data = await res.json();
 
                 // === Adjuntar PDF y XML ===
-                const oMessagePDF = await this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus);
-                const oMessageXML = await this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus);
+                const [oMessagePDF, oMessageXML] = await Promise.allSettled([
+                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
+                        .catch(err => ({ message: `PDF: ${err.message}`, success: false })),
+                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
+                        .catch(err => ({ message: `XML: ${err.message}`, success: false }))
+                ]);
 
                 const aResults = [
                     {
@@ -914,15 +930,15 @@ sap.ui.define([
                     },
                     {
                         label: "Documento PDF",
-                        message: oMessagePDF.message,
+                        message: oMessagePDF.value?.message || oMessagePDF.reason?.message,
                         icon: "sap-icon://pdf-attachment",
-                        success: oMessagePDF.success
+                        success: oMessagePDF.status === 'fulfilled' && oMessagePDF.value?.success
                     },
                     {
                         label: "Documento XML",
-                        message: oMessageXML.message,
+                        message: oMessageXML.value?.message || oMessageXML.reason?.message,
                         icon: "sap-icon://excel-attachment",
-                        success: oMessageXML.success
+                        success: oMessageXML.status === 'fulfilled' && oMessageXML.value?.success
                     }
                 ];
 
