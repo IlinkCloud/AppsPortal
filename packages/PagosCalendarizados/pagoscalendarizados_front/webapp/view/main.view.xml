@@ -56,15 +56,15 @@
                                 id="text5"
                             />
                             <Text
-                                text="{path: 'Payments>CreationDate', formatter: '.formatDate'}"
+                                text="{path: 'Payments>CreationDate', formatter: '.formatDateSimple'}"
                                 id="text4"
                             />
                             <Text
-                                text="{path: 'Payments>ExpiryDate', formatter: '.formatDate'}"
+                                text="{path: 'Payments>ExpiryDate', formatter: '.formatDateSimple'}"
                                 id="text5_copy"
                             />
                             <Text
-                                text="{Payments>PayDate}"
+                                text="{path: 'Payments>PayDate', formatter: '.formatDateSimple'}"
                                 id="text0"
                             />
                             <ObjectNumber

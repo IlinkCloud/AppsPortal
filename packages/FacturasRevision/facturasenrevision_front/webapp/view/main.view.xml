@@ -12,7 +12,7 @@
 									<Text text="{facturas>SupplierName}" width="auto" maxLines="3" wrapping="true" textAlign="Begin" textDirection="Inherit"/>
 									<Text text="{facturas>CompanyCodeName}"/>
 									<Text text="{facturas>ReferenceDocument}"/>
-									<Text text="{path: 'facturas>CreationDate', formatter: '.formatODataDate'}"/>
+									<Text text="{path: 'facturas>CreationDate', formatter: '.formatDateSimple'}"/>
 									<ObjectNumber xmlns:mvc="sap.ui.core.mvc" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout"
 										xmlns="sap.m"
 										number="{parts: [{path: 'facturas>SupplierInvoiceItemAmount'}, {path: 'facturas>DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"

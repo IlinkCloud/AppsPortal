@@ -5,8 +5,9 @@ sap.ui.define([
     "sap/m/PDFViewer",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox) => {
+    "sap/m/MessageBox",
+    "sap/ui/core/format/DateFormat"
+], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox, DateFormat) => {
     "use strict";
 
     var tipoUpload = "";
@@ -54,23 +55,44 @@ sap.ui.define([
         },
 
         ////////////////////// FORMATO DE FECHAS
+        ////////////////////// FORMATO DE FECHAS
         formatODataDate: function (v) {
             if (!v) return "";
-            const timestamp = parseInt(v.match(/\d+/)[0]);
+            let timestamp;
+            const match = /\/Date\((\d+)\)\//.exec(v);
+            if (match) {
+                timestamp = parseInt(match[1], 10);
+            } else {
+                const parsed = Date.parse(v);
+                if (isNaN(parsed)) return "";
+                timestamp = parsed;
+            }
             const date = new Date(timestamp);
-            jQuery.sap.require("sap.ui.core.format.DateFormat");
-            const oDateFormat = sap.ui.core.format.DateFormat.getDateTimeInstance({ pattern: "dd-MM-yyyy", UTC: true });
+            const oDateFormat = DateFormat.getDateInstance({ pattern: "dd-MM-yyyy" });
             return oDateFormat.format(date);
         },
 
         formatDate: function (v) {
-            if (v) {
-                jQuery.sap.require("sap.ui.core.format.DateFormat");
-                var oDateFormat = sap.ui.core.format.DateFormat.getDateTimeInstance({ pattern: "dd-MM-YYYY", UTC: true });
-                return oDateFormat.format(new Date(v));
+            if (!v) return "";
+            const date = new Date(v);
+            if (isNaN(date.getTime())) return "";
+            const oDateFormat = DateFormat.getDateInstance({ pattern: "dd-MM-yyyy" });
+            return oDateFormat.format(date);
+        },
+
+        // Nueva función para formato "8 ene 2026"
+        formatDateSimple: function (v) {
+            if (!v) return "";
+            let date;
+            const match = /\/Date\((\d+)\)\//.exec(v);
+            if (match) {
+                date = new Date(parseInt(match[1], 10));
             } else {
-                return null;
+                date = new Date(v);
             }
+            if (isNaN(date.getTime())) return "";
+            const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
+            return oDateFormat.format(date);
         },
 
         providersSearch: function (evt) {
@@ -186,7 +208,7 @@ sap.ui.define([
             }
             // Aquí enviar al backend los archivos tipo A con el mensaje
             console.log("Enviando aclaración con archivos:", anexosBLOB, "y mensaje:", mensaje);
-           // MessageToast.show("Aclaración enviada correctamente");
+            // MessageToast.show("Aclaración enviada correctamente");
             this.onCloseDialogUpload();
         },
 

@@ -5,8 +5,9 @@ sap.ui.define([
     "sap/m/PDFViewer",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox) => {
+    "sap/m/MessageBox",
+    "sap/ui/core/format/DateFormat"
+], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox, DateFormat) => {
     "use strict";
 
     var tipoUpload = "";
@@ -57,7 +58,6 @@ sap.ui.define([
         formatODataDate: function (v) {
             if (!v) return "";
             let timestamp;
-
             const match = /\/Date\((\d+)\)\//.exec(v);
             if (match) {
                 timestamp = parseInt(match[1], 10);
@@ -66,21 +66,35 @@ sap.ui.define([
                 if (isNaN(parsed)) return "";
                 timestamp = parsed;
             }
-
             const date = new Date(timestamp);
-            jQuery.sap.require("sap.ui.core.format.DateFormat");
-            const oDateFormat = sap.ui.core.format.DateFormat.getDateTimeInstance({ pattern: "dd-MM-yyyy", UTC: true });
+            const oDateFormat = DateFormat.getDateInstance({ pattern: "dd-MM-yyyy" });
             return oDateFormat.format(date);
         },
 
         formatDate: function (v) {
             if (v) {
-                jQuery.sap.require("sap.ui.core.format.DateFormat");
-                var oDateFormat = sap.ui.core.format.DateFormat.getDateTimeInstance({ pattern: "dd-MM-YYYY", UTC: true });
+                const oDateFormat = DateFormat.getDateInstance({ pattern: "dd-MM-yyyy" });
                 return oDateFormat.format(new Date(v));
             } else {
                 return null;
             }
+        },
+
+        formatDateSimple: function (v) {
+            if (!v) return "";
+
+            let date;
+            const match = /\/Date\((\d+)\)\//.exec(v);
+            if (match) {
+                date = new Date(parseInt(match[1], 10));
+            } else {
+                date = new Date(v);
+            }
+
+            if (isNaN(date.getTime())) return "";
+
+            const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
+            return oDateFormat.format(date);
         },
 
         providersSearch: function (evt) {
