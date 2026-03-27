@@ -253,7 +253,7 @@ sap.ui.define([
 
 
             if (aSelected.length === 0) {
-                MessageBox.error("Debes seleccionar un documento en la tabla antes de subir archivos.");
+                MessageBox.warning("Debes seleccionar un documento en la tabla antes de subir archivos.");
                 return;
             }
 
@@ -282,7 +282,7 @@ sap.ui.define([
                         oFileList.removeAllItems();
                         aFiles.forEach(file => {
                             if (file.size > 2 * 1024 * 1024) {
-                                MessageBox.error(
+                                MessageBox.warning(
                                     `El archivo "${file.name}" excede el límite de 2 Mb.`
                                 );
                                 return;
@@ -290,7 +290,7 @@ sap.ui.define([
                             if (!(file.type === "application/pdf" ||
                                 file.type === "text/xml" ||
                                 file.type === "application/xml")) {
-                                MessageBox.error(
+                                MessageBox.warning(
                                     `El archivo "${file.name}" no es válido. Solo se permiten PDF o XML.`
                                 );
                                 return;
@@ -344,7 +344,7 @@ sap.ui.define([
                                 const sName = oFile.name.split(".")[0];
                                 const isValidName = /[a-zA-Z0-9]/.test(sName);
                                 if (!sName || !isValidName) {
-                                    MessageBox.error("Los nombres de los archivos deben contener letras y/o números");
+                                    MessageBox.warning("Los nombres de los archivos deben contener letras y/o números");
                                     return;
                                 }
                                 if (oFile.type === "application/pdf") {
@@ -355,7 +355,7 @@ sap.ui.define([
                                 }
                             }
                             if (!isTherePDF || !isThereXML) {
-                                MessageBox.error("Se requiere un documento XML y un PDF");
+                                MessageBox.warning("Se requiere un documento XML y un PDF");
                                 return;
                             }
                             BusyIndicator.show(100);
@@ -364,7 +364,7 @@ sap.ui.define([
                             const aCurrentSelected = oTable.getSelectedItems();
 
                             if (aCurrentSelected.length === 0) {
-                                MessageBox.error("No hay documentos seleccionados. Por favor selecciona un documento.");
+                                MessageBox.warning("No hay documentos seleccionados. Por favor selecciona un documento.");
                                 BusyIndicator.hide();
                                 return;
                             }
@@ -438,7 +438,7 @@ sap.ui.define([
                                             });
                                             if (!res.ok) {
                                                 const errText = await res.text();
-                                                sap.m.MessageBox.error("Error al validar factura:\n" + errText);
+                                                sap.m.MessageBox.warning("Error al validar factura:\n" + errText);
                                                 return;
                                             }
                                             const data = await res.json();
@@ -475,12 +475,12 @@ sap.ui.define([
                                                 if (sDuplicatedMsg) {
                                                     oController._showDuplicatedUUIDMessage(sDuplicatedMsg, aCurrentSelected);
                                                 } else {
-                                                    MessageBox.error("Factura inválida:\n" + errores.join("\n"));
+                                                    MessageBox.warning("Factura inválida:\n" + errores.join("\n"));
                                                 }
                                             }
                                             BusyIndicator.hide();
                                         } catch (err) {
-                                            MessageBox.error("Error al validar factura:\n" + err.message);
+                                            MessageBox.warning("Error al validar factura:\n" + err.message);
                                             BusyIndicator.hide();
                                         }
                                     };
@@ -906,7 +906,7 @@ sap.ui.define([
                 if (!res.ok) {
                     const errText = await res.text();
                     const userMessage = this._formatErrorMessage(errText, datosCFDI.CURRENCY);
-                    sap.m.MessageBox.error(userMessage);
+                    sap.m.MessageBox.warning(userMessage);
                     BusyIndicator.hide();
                     return;
                 }
@@ -945,8 +945,6 @@ sap.ui.define([
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
 
-                // === Recargar tabla (sin depender del modelo) ===
-                await this.getReadGoodsReceipt();
 
                 // === Cerrar diálogo de resumen ===
                 if (this._oResumenDialog) {
@@ -960,6 +958,8 @@ sap.ui.define([
         },
 
         _showResultDialog: function (aResults) {
+            const oController = this; // === Guardar referencia al controller ===
+
             const oVBox = new sap.m.VBox({
                 items: [
                     ...aResults.map(function (item) {
@@ -989,6 +989,11 @@ sap.ui.define([
                     }
                 }),
                 afterClose: function () {
+                    // === ACTUALIZAR TABLA AL CERRAR ===
+                    if (oController) {
+                        oController.getReadGoodsReceipt();
+                        console.log("[_showResultDialog] Tabla recargada al cerrar dialog");
+                    }
                     oDialog.destroy();
                 }
             }).addStyleClass("sapUiResponsivePadding--content sapUiResponsivePadding--header sapUiResponsivePadding--footer sapUiResponsivePadding--subHeader");
@@ -1088,7 +1093,7 @@ sap.ui.define([
                     const credits = parseFloat(match[2].replace(/,/g, ""));
                     const diff = (debits - credits).toFixed(2);
 
-                    sap.m.MessageBox.error(
+                    sap.m.MessageBox.warning(
                         `El balance contable no cuadra.\n` +
                         `Débitos: ${debits.toLocaleString("es-MX")} ${CURRENCY}\n` +
                         `Créditos: ${credits.toLocaleString("es-MX")} ${CURRENCY}\n` +
@@ -1100,7 +1105,7 @@ sap.ui.define([
 
             // Caso TaxCode faltante
             if (errText.includes("Enter a tax code in item") || errText.includes("Falta TaxCode")) {
-                sap.m.MessageBox.error(
+                sap.m.MessageBox.warning(
                     "La orden de compra seleccionada no tiene código de impuesto configurado.\n" +
                     "Contacte al equipo de finanzas para corregirlo en S/4HANA."
                 );
@@ -1120,37 +1125,105 @@ sap.ui.define([
         },
 
         _formatErrorMessage: function (errText, currency) {
-            const cleanText = errText.replace(/\n/g, " ").trim();
+            // === 1. Intentar parsear JSON si viene como string ===
+            let errorObj;
+            try {
+                errorObj = typeof errText === 'string' ? JSON.parse(errText) : errText;
+            } catch (e) {
+                errorObj = { error: { message: errText } };
+            }
 
-            // Balance contable
+            // Extraer mensaje del error
+            const message = errorObj.error?.message ||
+                errorObj.message ||
+                (typeof errText === 'string' ? errText : JSON.stringify(errText));
+
+            const cleanText = message.replace(/\n/g, " ").trim();
+
+            // === 2. NUEVO: Diferencia de montos ===
+            const montoDiffMatch = cleanText.match(/Diferencia de montos:\s*([\d.,]+)/);
+            if (montoDiffMatch) {
+                const montoDiferencia = montoDiffMatch[1];
+                return `Diferencia de Montos Detectada\n\n` +
+                    `La suma de los importes seleccionados (${currency} ${montoDiferencia}) ` +
+                    `no coincide con el subtotal de la nota de crédito.\n\n` +
+                    `Posibles causas:\n` +
+                    `• Seleccionaste posiciones de pedido con montos diferentes a la nota\n` +
+                    `• La nota de crédito tiene un monto incorrecto\n\n` +
+                    `Recomendación:\n` +
+                    `Verifica que los documentos seleccionados en la tabla correspondan ` +
+                    `exactamente al monto total de la nota de crédito.`;
+            }
+
+            // === 3. Duplicado de documento contable ===
+            let duplicateMatch = cleanText.match(/potential duplicate exists.*?acc doc (\d+) (\d+)/);
+            if (duplicateMatch) {
+                const accDoc = duplicateMatch[1];
+                const year = duplicateMatch[2];
+                return `Ya existe una nota contabilizada para este documento de referencia.\n` +
+                    `Documento contable existente: ${accDoc} (${year})\n\n` +
+                    `Posibles causas:\n` +
+                    `• Esta posición de pedido ya fue facturada previamente\n` +
+                    `Verifique:\n` +
+                    `1. Las posiciones de pedido seleccionadas en la tabla\n` +
+                    `2. Si necesita facturar una posición diferente, selecciónela específicamente`;
+            }
+
+            // === 4. Error de retenciones exceden monto ===
+            if (cleanText.includes("monto total de retenciones") &&
+                cleanText.includes("excede el monto de los ítems")) {
+                const montoRet = cleanText.match(/\(\$([\d.,]+)\)/)?.[1] || "N/A";
+                const montoItems = cleanText.match(/ítems \(\$([\d.,]+)\)/)?.[1] || "N/A";
+                return "Retenciones Exceden el Monto\n\n" +
+                    "El monto de retención configurado excede el valor de la nota de crédito.\n\n" +
+                    `• Monto de retenciones: $${montoRet}\n` +
+                    `• Monto de ítems seleccionados: $${montoItems}\n\n` +
+                    `Contacte al equipo de finanzas para revisar la configuración.`;
+            }
+
+            // === 5. Balance contable ===
             const balanceMatch = cleanText.match(/Balance not zero.*?debits:\s([\d.,]+)\s+credits:\s([\d.,]+)/);
             if (balanceMatch) {
                 const debits = parseFloat(balanceMatch[1].replace(/,/g, ""));
                 const credits = parseFloat(balanceMatch[2].replace(/,/g, ""));
                 const diff = (debits - credits).toFixed(2);
-                return `El balance contable no cuadra.\nDébitos: ${debits.toLocaleString("es-MX")} ${currency}\nCréditos: ${credits.toLocaleString("es-MX")} ${currency}\nDiferencia: ${diff.toLocaleString("es-MX")} ${currency}`;
+                return `El balance contable no cuadra.\n\n` +
+                    `Débitos: ${debits.toLocaleString("es-MX")} ${currency}\n` +
+                    `Créditos: ${credits.toLocaleString("es-MX")} ${currency}\n` +
+                    `Diferencia: ${diff.toLocaleString("es-MX")} ${currency}\n\n` +
+                    `Verifique los montos de las partidas.`;
             }
 
-            // Duplicado de factura
-            const duplicateMatch = cleanText.match(/potential duplicate exists \(inv\. (\d+) (\d{4})\)/);
+            // === 6. Duplicado de factura ===
+            duplicateMatch = cleanText.match(/potential duplicate exists \(inv\. (\d+) (\d{4})\)/);
             if (duplicateMatch) {
                 const invoiceNumber = duplicateMatch[1];
                 const year = duplicateMatch[2];
-                return `La factura no se creó automáticamente porque ya existe un posible duplicado.\nFactura existente: ${invoiceNumber} (${year}).`;
+                return `La nota no se creó automáticamente porque ya existe un posible duplicado.\n\n` +
+                    `Nota existente: ${invoiceNumber} (${year}).\n\n` +
+                    `Verifique si ya procesó esta nota de crédito anteriormente.`;
             }
 
-            // TaxCode faltante
+            // === 7. TaxCode faltante ===
             if (cleanText.includes("Enter a tax code in item") || cleanText.includes("Falta TaxCode")) {
-                return "La orden de compra seleccionada no tiene código de impuesto configurado.\nContacte al equipo de finanzas para corregirlo en S/4HANA.";
+                return "Código de Impuesto Faltante\n\n" +
+                    "La orden de compra seleccionada no tiene código de impuesto configurado.\n\n" +
+                    `PO afectada: ${cleanText.match(/PO:\s*(\d+)/)?.[1] || 'No identificada'}\n\n` +
+                    `Contacte al equipo de finanzas para corregirlo en S/4HANA.`;
             }
 
-            // Internal Server Error
+            // === 8. Internal Server Error ===
             if (cleanText.includes("Internal Server Error")) {
-                return "Ocurrió un error interno en el servidor. Intente nuevamente o contacte al área de soporte.";
+                return "Error Interno del Servidor\n\n" +
+                    "Ocurrió un error interno en el servidor.\n\n" +
+                    `Detalles: ${cleanText}\n\n` +
+                    `Intente nuevamente o contacte al área de soporte técnico.`;
             }
 
-            // Otros errores
-            return "Error al registrar la factura:\n" + cleanText;
+            // === 9. Otros errores - mensaje genérico pero limpio ===
+            return `Error al registrar la nota de crédito\n\n` +
+                `Detalles: ${cleanText}\n\n` +
+                `Si el problema persiste, contacte al área de soporte.`;
         },
 
         onFileSelected: function (oEvent) {
