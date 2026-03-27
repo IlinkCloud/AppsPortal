@@ -40,7 +40,7 @@
             <VBox>
                 <Toolbar>
                     <content>
-                        <Title text="{i18n>nota.header}" />
+                       <!-- <Title text="{i18n>nota.header}" /> -->
                         <ToolbarSpacer />
                         <SearchField
                             id="searchField"
