@@ -24,11 +24,50 @@ sap.ui.define([
             this._pdfViewer = new PDFViewer();
             this.getView().addDependent(this._pdfViewer);
 
+            //Sincronización automática.
+            this._runAutoSync();
+
             this.getView().addEventDelegate({
                 onBeforeShow: function () {
                     this.getFacturasenRevision();
                 }
             }, this);
+        },
+
+        // === NUEVO: Ejecutar sincronización en background ===
+        _runAutoSync: function () {
+            console.log('[UI] Iniciando sincronización automática en background...');
+
+            // Fire-and-forget: no bloqueamos la UI ni esperamos respuesta
+            fetch("/odata/v4/pre-invoice/syncXMLPortWithSAP", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                credentials: "include"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('[UI] Sincronización automática completada:', data);
+                    const result = data.result || {};
+
+                    // Notificación sutil solo si hubo cambios
+                    if (result.updated > 0 || result.deleted > 0) {
+                        MessageToast.show(
+                            ` Sincronización: ${result.updated} actualizadas, ${result.deleted} eliminadas`,
+                            { duration: 5000 }
+                        );
+                    }
+
+                    // Refrescar lista de facturas después de sincronizar
+                    this.getFacturasenRevision();
+                })
+                .catch(error => {
+                    console.warn('[UI] Error en sincronización automática (no crítico):', error.message);
+                    // No mostramos error al usuario para no interrumpir la experiencia
+                    this.getFacturasenRevision();
+                });
         },
 
         ////////////////////// FETCH FACTURAS
