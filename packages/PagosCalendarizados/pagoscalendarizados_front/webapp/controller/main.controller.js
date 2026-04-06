@@ -33,7 +33,7 @@ sap.ui.define([
 
         ////////////////////// FETCH FACTURAS
         getFacturasenRevision: function () {
-            fetch("/odata/v4/schedule-payments/Payments", {
+            fetch("/odata/v4/schedule-payments/Payments?$top=1000", {
                 method: "GET",
                 headers: { "Accept": "application/json" },
                 credentials: "include"
@@ -54,7 +54,6 @@ sap.ui.define([
                 .catch(error => console.error("Error:", error));
         },
 
-        ////////////////////// FORMATO DE FECHAS
         ////////////////////// FORMATO DE FECHAS
         formatODataDate: function (v) {
             if (!v) return "";
@@ -83,14 +82,15 @@ sap.ui.define([
         // Nueva función para formato "8 ene 2026"
         formatDateSimple: function (v) {
             if (!v) return "";
-            let date;
-            const match = /\/Date\((\d+)\)\//.exec(v);
-            if (match) {
-                date = new Date(parseInt(match[1], 10));
-            } else {
-                date = new Date(v);
-            }
+
+            // Evita el cambio de zona horaria dividiendo la fecha y creando el objeto en hora local
+            const parts = v.split("-");
+            if (parts.length !== 3) return "";
+
+            // new Date(año, mes-1, día) crea la fecha a las 00:00:00 en la zona horaria del navegador
+            const date = new Date(parts[0], parts[1] - 1, parts[2]);
             if (isNaN(date.getTime())) return "";
+
             const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
             return oDateFormat.format(date);
         },
