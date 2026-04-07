@@ -62,11 +62,11 @@ resources:
 - name: AppsPortalFront_html_repo_runtime
   type: org.cloudfoundry.existing-service
 
-- name: Devoluciones_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
+#- name: Devoluciones_html_repo_runtime
+#  type: org.cloudfoundry.managed-service
+#  parameters:
+#    service: html5-apps-repo
+#    service-plan: app-runtime
 
 - name: uaa_Devoluciones
   type: org.cloudfoundry.managed-service
@@ -123,24 +123,24 @@ resources:
         - name: default
           description: Sustainable SaaS default plan
 #-----------------------------------------------------------------------------------------
-- name: Devoluciones-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Devoluciones-destination-service
-    service-plan: lite
+#- name: Devoluciones-destination-service
+#  type: org.cloudfoundry.managed-service
+#  parameters:
+#    config:
+#      HTML5Runtime_enabled: false
+#      init_data:
+#        instance:
+#          destinations:
+#          - Authentication: NoAuthentication
+#            Name: ui5
+#            ProxyType: Internet
+#            Type: HTTP
+#            URL: https://ui5.sap.com
+#          existing_destinations_policy: update
+#      version: 1.0.0
+#    service: destination
+#    service-name: Devoluciones-destination-service
+#    service-plan: lite
 - name: AppsPortalFront-destination-service
   type: org.cloudfoundry.existing-service
 parameters:
