@@ -7,10 +7,10 @@
       "name": "uaa.user",
       "description": "UAA"
     },
-    {  
-      "name":"$XSAPPNAME.Callback",
-      "description":"With this scope set, the callbacks for subscribe, unsubscribe and getDependencies can be called.",
-      "grant-as-authority-to-apps":[  
+    {
+      "name": "$XSAPPNAME.Callback",
+      "description": "With this scope set, the callbacks for subscribe, unsubscribe and getDependencies can be called.",
+      "grant-as-authority-to-apps": [
         "$XSAPPNAME(application,sap-provisioning,tenant-onboarding)"
       ]
     }
@@ -27,7 +27,8 @@
   "oauth2-configuration": {
     "token-validity": 3600,
     "redirect-uris": [
-        "http*://*.cfapps.*.hana.ondemand.com/**","https*://*s4hana.cloud.sap*/**"
+      "http*://*.cfapps.*.hana.ondemand.com/**",
+      "https*://*s4hana.cloud.sap*/**"
     ]
   }
 }

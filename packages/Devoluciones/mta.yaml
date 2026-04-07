@@ -13,11 +13,11 @@ modules:
   #------------------------------------------------------------------------------------------
   requires:
   #- name: Devoluciones_html_repo_runtime
-  - name: frontend-html-repo-runtime
+  - name: AppsPortalFront_html_repo_runtime
   - name: uaa_Devoluciones
   - name: Devoluciones_saas_registry # Manual
   #- name: Devoluciones-destination-service
-  - name: frontend-destination
+  - name: AppsPortalFront-destination-service
     group: destinations
     properties:
       forwardAuthToken: false
@@ -59,25 +59,42 @@ modules:
     - npm run build:cf
     supported-platforms: []
 resources:
-- name: frontend-html-repo-runtime
+- name: AppsPortalFront_html_repo_runtime
   type: org.cloudfoundry.existing-service
 
-#- name: Devoluciones_html_repo_runtime
- # type: org.cloudfoundry.managed-service
-  #parameters:
-   # service: html5-apps-repo
-    #service-plan: app-runtime
+- name: Devoluciones_html_repo_runtime
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-runtime
 
 - name: uaa_Devoluciones
   type: org.cloudfoundry.managed-service
   parameters:
-    path: ./xs-security.json
     service: xsuaa
-    service-name: Devoluciones-xsuaa-service
     service-plan: application
-
-
-
+    service-name: ${appname}-xsuaa
+    config:
+      xsappname: ${appname}
+      tenant-mode: shared
+      description: Security profile of called application
+      scopes:
+        - name: uaa.user
+          description: UAA
+        - name: $XSAPPNAME.Callback
+          description: With this scope set, the callbacks can be called
+          grant-as-authority-to-apps:
+            - $XSAPPNAME(application,sap-provisioning,tenant-onboarding)
+      role-templates:
+        - name: Token_Exchange
+          description: UAA
+          scope-references:
+            - uaa.user
+      oauth2-configuration:
+        token-validity: 3600
+        redirect-uris:
+          - "http*://*.cfapps.*.hana.ondemand.com/**"
+          - "https*://*s4hana.cloud.sap*/**"
 
 - name: Devoluciones_html_repo_host
   type: org.cloudfoundry.managed-service
@@ -106,25 +123,25 @@ resources:
         - name: default
           description: Sustainable SaaS default plan
 #-----------------------------------------------------------------------------------------
-# - name: Devoluciones-destination-service
-#   type: org.cloudfoundry.managed-service
-#   parameters:
-#     config:
-#       HTML5Runtime_enabled: false
-#       init_data:
-#         instance:
-#           destinations:
-#           - Authentication: NoAuthentication
-#             Name: ui5
-#             ProxyType: Internet
-#             Type: HTTP
-#             URL: https://ui5.sap.com
-#           existing_destinations_policy: update
-#       version: 1.0.0
-#     service: destination
-#     service-name: Devoluciones-destination-service
-#     service-plan: lite
-- name: frontend-destination
+- name: Devoluciones-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: false
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: Devoluciones-destination-service
+    service-plan: lite
+- name: AppsPortalFront-destination-service
   type: org.cloudfoundry.existing-service
 parameters:
   appname: devoluciones #------Manual
