@@ -4,10 +4,22 @@ sap.ui.define([
     "sap/ui/core/BusyIndicator",
     "sap/m/MessageBox",
     "sap/ui/core/format/DateFormat",
-    "sap/ui/unified/FileUploader"
-], (Controller, JSONModel, BusyIndicator, MessageBox, DateFormat, FileUploader) => {
+    "sap/ui/unified/FileUploader",
+    "sap/m/Dialog",
+    "sap/m/Text",
+    "sap/m/Button",
+    "sap/m/VBox",
+    "sap/m/ObjectStatus",
+    "sap/m/Label",
+    "sap/m/StandardListItem",
+    "sap/m/List",
+    "sap/ui/core/Icon",
+    "sap/m/PDFViewer",
+    "sap/m/MessageToast",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator"
+], (Controller, JSONModel, BusyIndicator, MessageBox, DateFormat, FileUploader, Dialog, Text, Button, VBox, ObjectStatus, Label, StandardListItem, List, Icon, PDFViewer, MessageToast, Filter, FilterOperator) => {
     "use strict";
-
     return Controller.extend("enviarcfdipagofront.controller.main", {
         onInit() {
             this._setDefaultDates();
@@ -16,42 +28,31 @@ sap.ui.define([
 
         _setDefaultDates: function () {
             const oToday = new Date();
-            const oStartOfYear = new Date(oToday.getFullYear(), 0, 1); // 1 de enero del año actual
-
+            const oStartOfYear = new Date(oToday.getFullYear(), 0, 1);
             const oStartDatePicker = this.byId("startDatePicker");
             const oEndDatePicker = this.byId("endDatePicker");
-
-            // Establecer fechas en los DatePickers (sin aplicar filtro aún)
             if (oStartDatePicker) oStartDatePicker.setDateValue(oStartOfYear);
             if (oEndDatePicker) oEndDatePicker.setDateValue(oToday);
         },
 
         getPaymentComplements() {
             BusyIndicator.show(100);
-
-            // === Obtener fechas de los DatePickers ===
             const oStart = this.byId("startDatePicker")?.getDateValue();
             const oEnd = this.byId("endDatePicker")?.getDateValue();
             const formatDate = (d) => d ? d.toISOString().split('T')[0] : null;
-
-            // === Construir URL con parámetros de fecha ===
             let url = `/odata/v4/cfdipayment/ReadPaymentComplement`;
             const params = [];
             if (formatDate(oStart)) params.push(`FromDate=${formatDate(oStart)}`);
             if (formatDate(oEnd)) params.push(`ToDate=${formatDate(oEnd)}`);
             if (params.length > 0) url += `?${params.join('&')}`;
-
             console.log("[getPaymentComplements] URL:", url);
-
             fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
                 .then(res => {
                     return res.ok ? res.json() : res.text().then(t => { throw new Error(t); });
                 })
                 .then(data => {
                     const aData = data.value || [];
-
                     console.log("[getPaymentComplements] Registros cargados:", aData.length);
-
                     let oModel = this.getView().getModel("PCModel");
                     if (!oModel) {
                         oModel = new JSONModel();
@@ -70,43 +71,219 @@ sap.ui.define([
         onSearch(oEvent) {
             const sQuery = oEvent.getParameter("query");
             const sSelectedKey = this.byId("selectFilter").getSelectedKey();
-
             const oTable = this.byId("complPagoTbl");
             const oBinding = oTable.getBinding("items");
-
             let aFilters = [];
             if (sQuery) {
-                aFilters.push(new sap.ui.model.Filter(sSelectedKey, sap.ui.model.FilterOperator.Contains, sQuery));
+                aFilters.push(new Filter(sSelectedKey, FilterOperator.Contains, sQuery));
             }
-
             oBinding.filter(aFilters);
         },
 
         onUpload: function () {
             const oTable = this.byId("complPagoTbl");
             const aSelected = oTable.getSelectedItems();
-
             if (aSelected.length === 0) {
-                MessageBox.error("Debes seleccionar un documento en la tabla antes de subir archivos.");
+                MessageBox.warning("Debes seleccionar un documento en la tabla antes de subir archivos.");
                 return;
             }
-
             this._showUploadFileDialog(aSelected);
-
         },
 
         onChangeDate: function () {
             console.log("[onChangeDate] Fechas cambiadas, recargando datos del backend...");
-
-            // Obtener las fechas actuales de los DatePickers
             const oStart = this.byId("startDatePicker")?.getDateValue();
             const oEnd = this.byId("endDatePicker")?.getDateValue();
-
             console.log("[onChangeDate] Nueva fecha inicio:", oStart);
             console.log("[onChangeDate] Nueva fecha fin:", oEnd);
-
-            // Recargar datos desde el backend con las nuevas fechas
             this.getPaymentComplements();
+        },
+
+        _getTaxRateFromPO: async function (BuyDocument) {
+            console.log(`[TaxRate] Iniciando consulta para PO: ${BuyDocument}`);
+            try {
+                const url = `/odata/v4/cfdipayment/GetTaxRateFromPO?purchaseOrder=${encodeURIComponent(BuyDocument)}`;
+                console.log(`[TaxRate] URL: ${url}`);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'include'
+                });
+                console.log(`[TaxRate] Response status: ${response.status}`);
+                if (!response.ok) {
+                    console.warn(`[TaxRate] HTTP ${response.status} para PO ${BuyDocument}`);
+                    return 0.16;
+                }
+                const data = await response.json();
+                console.log(`[TaxRate] Response data:`, data);
+                const firstItem = data.value?.[0]?.value?.[0] || data.value?.[0];
+                const taxRateDecimal = firstItem?.TaxRateDecimal;
+                const conditionRateRatio = firstItem?.ConditionRateRatio;
+                console.log(`[TaxRate] TaxRateDecimal: ${taxRateDecimal}, ConditionRateRatio: ${conditionRateRatio}`);
+                if (typeof taxRateDecimal === 'number' && !isNaN(taxRateDecimal) && taxRateDecimal > 0) {
+                    console.log(`[TaxRate] PO ${BuyDocument}: ${(taxRateDecimal * 100).toFixed(2)}%`);
+                    return taxRateDecimal;
+                }
+                console.warn(`[TaxRate] Fallback a 16% para PO ${BuyDocument}`);
+                return 0.16;
+            } catch (err) {
+                console.error(`[TaxRate] Error para PO ${BuyDocument}: ${err.message}`);
+                return 0.16;
+            }
+        },
+
+        _validateToleranceWithTax: async function (aSelected, datosCFDI) {
+            console.log(`\n[Tolerancia-Pago] === INICIANDO VALIDACIÓN ===`);
+            console.log(`[Tolerancia-Pago] Documentos seleccionados: ${aSelected.length}`);
+            console.log(`[Tolerancia-Pago] Total CFDI: ${datosCFDI.TOTAL}`);
+
+            // === TOLERANCIA EN 0: Exige monto exacto ===
+            const nMinTolerance = 0;
+            const nMaxTolerance = 0;
+            const aDeviations = [];
+
+            const paymentGroups = new Map();
+            for (let i = 0; i < aSelected.length; i++) {
+                const oElement = aSelected[i];
+                const oContext = oElement.getBindingContext("PCModel");
+                const oData = oContext.getObject();
+                const paymentDoc = oData.PaymentDocument;
+
+                if (!paymentGroups.has(paymentDoc)) {
+                    paymentGroups.set(paymentDoc, {
+                        paymentDoc: paymentDoc,
+                        items: [],
+                        totalAmmount: 0,
+                        lines: []
+                    });
+                }
+                const group = paymentGroups.get(paymentDoc);
+                group.items.push(oData.PositionNumber || oData.MaterialDocumentPos || "1");
+                group.totalAmmount += Number(oData.Ammount) || 0;
+                group.lines.push(oElement);
+            }
+
+            console.log(`[Tolerancia-Pago] Documentos de pago agrupados: ${paymentGroups.size}`);
+
+            for (const [payKey, group] of paymentGroups) {
+                console.log(`\n[Tolerancia-Pago] --- Pago: ${payKey} ---`);
+                console.log(`[Tolerancia-Pago] Items: ${group.items.join(', ')}`);
+                console.log(`[Tolerancia-Pago] Total Ammount agrupado: ${group.totalAmmount.toFixed(2)}`);
+
+                try {
+                    let taxRate = 0.16;
+                    if (group.lines[0]?.getBindingContext("PCModel")?.getObject()?.BuyDocument) {
+                        const po = group.lines[0].getBindingContext("PCModel").getObject().BuyDocument;
+                        taxRate = await this._getTaxRateFromPO(po).catch(err => {
+                            console.warn(`[TaxRate-Pago] Fallback: ${err.message}`);
+                            return 0.16;
+                        });
+                    }
+
+                    console.log(`[Tolerancia-Pago] TaxRate usado: ${(taxRate * 100).toFixed(2)}%`);
+                    const nTotalWithTax = group.totalAmmount * (1 + taxRate);
+                    const nInvoiceTotal = Number(datosCFDI.TOTAL);
+
+                    console.log(`[Tolerancia-Pago] Cálculo:`);
+                    console.log(`   Total Ammount (suma): ${group.totalAmmount.toFixed(2)}`);
+                    console.log(`   TaxRate: ${taxRate}`);
+                    console.log(`   Total con impuesto: ${nTotalWithTax.toFixed(2)}`);
+                    console.log(`   Total complemento: ${nInvoiceTotal}`);
+
+                    const nLowerLimit = nTotalWithTax - nMinTolerance;
+                    const nUpperLimit = nTotalWithTax + nMaxTolerance;
+
+                    console.log(`[Tolerancia-Pago] Límites:`);
+                    console.log(`   Límite inferior: ${nLowerLimit.toFixed(2)}`);
+                    console.log(`   Límite superior: ${nUpperLimit.toFixed(2)}`);
+
+                    if (nInvoiceTotal < nLowerLimit || nInvoiceTotal > nUpperLimit) {
+                        const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
+                        console.log(`[Tolerancia-Pago] DESVIACIÓN DETECTADA: ${nDeviation.toFixed(2)}`);
+                        aDeviations.push({
+                            paymentDoc: payKey,
+                            items: group.items,
+                            expected: nTotalWithTax,
+                            received: nInvoiceTotal,
+                            deviation: nDeviation,
+                            taxRate: taxRate * 100,
+                            totalAmmount: group.totalAmmount
+                        });
+                    } else {
+                        console.log(`[Tolerancia-Pago] Dentro del rango aceptable`);
+                    }
+                } catch (err) {
+                    console.warn(`[Tolerancia-Pago] Error en ${payKey}: ${err.message}`);
+                    continue;
+                }
+            }
+
+            console.log(`\n[Tolerancia-Pago] === FIN VALIDACIÓN ===`);
+            console.log(`[Tolerancia-Pago] Desviaciones encontradas: ${aDeviations.length}`);
+            return aDeviations;
+        },
+
+        _getDeviationConfirmation: function (aDeviations, nMaxQntyTolerance, nMinQntyTolerance) {
+            const firstDeviation = aDeviations[0];
+            const nDeviation = typeof firstDeviation === 'object' ? firstDeviation.deviation : firstDeviation;
+            const paymentDoc = typeof firstDeviation === 'object' ? firstDeviation.paymentDoc : null;
+            const items = typeof firstDeviation === 'object' ? firstDeviation.items : null;
+            const expected = typeof firstDeviation === 'object' ? firstDeviation.expected : null;
+            const received = typeof firstDeviation === 'object' ? firstDeviation.received : null;
+            const totalAmmount = typeof firstDeviation === 'object' ? firstDeviation.totalAmmount : null;
+
+            const isAboveMax = nDeviation > nMaxQntyTolerance;
+            const isBelowMin = nMinQntyTolerance !== undefined && nDeviation < nMinQntyTolerance;
+
+            let sMessage = '';
+            const itemsText = items ? ` (Items: ${items.join(', ')})` : '';
+
+            if (isAboveMax) {
+                sMessage = paymentDoc
+                    ? `La diferencia de ${nDeviation.toFixed(2)} supera la desviación máxima ${nMaxQntyTolerance}\n` +
+                    `Pago: ${paymentDoc}${itemsText}\n` +
+                    `Total OC (sin impuestos): ${totalAmmount?.toFixed(2) || 'N/A'}\n` +
+                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
+                    `Recibido en complemento: ${received?.toFixed(2)}`
+                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} supera la desviación máxima ${nMaxQntyTolerance}`;
+            } else if (isBelowMin) {
+                sMessage = paymentDoc
+                    ? `La diferencia de ${nDeviation.toFixed(2)} está por debajo de la desviación mínima ${nMinQntyTolerance}\n` +
+                    `Pago: ${paymentDoc}${itemsText}\n` +
+                    `Total OC (sin impuestos): ${totalAmmount?.toFixed(2) || 'N/A'}\n` +
+                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
+                    `Recibido en complemento: ${received?.toFixed(2)}`
+                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está por debajo de la desviación mínima ${nMinQntyTolerance}`;
+            } else {
+                sMessage = `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está fuera del rango aceptable`;
+            }
+
+            return new Promise((resolve) => {
+                const oDialog = new Dialog({
+                    type: "Message",
+                    title: isAboveMax ? "Desviación Máxima" : "Desviación Mínima",
+                    content: new Text({ text: sMessage }),
+                    beginButton: new Button({
+                        type: "Emphasized",
+                        text: "Enviar con desviación",
+                        press: function () {
+                            resolve("Enviar");
+                            oDialog.close();
+                        }.bind(this)
+                    }),
+                    endButton: new Button({
+                        text: "Cargar otro complemento",
+                        press: function () {
+                            resolve("Cancelar");
+                            oDialog.close();
+                        }.bind(this)
+                    }),
+                    afterClose: function () {
+                        oDialog.destroy();
+                    }
+                });
+                oDialog.open();
+            });
         },
 
         _showUploadFileDialog(aSelected) {
@@ -121,70 +298,55 @@ sap.ui.define([
                     mimeType: ["application/pdf", "text/xml", "application/xml"],
                     change: function (oEvent) {
                         aFiles = Array.from(oEvent.getParameter("files"));
-
                         if (aFiles.length === 0) return;
-
                         oAnexosLabel.setText(`Anexos (${aFiles.length})`);
                         oFileList.removeAllItems();
-
-
                         aFiles.forEach(file => {
                             if (file.size > 2 * 1024 * 1024) {
-                                MessageBox.error(
-                                    `El archivo "${file.name}" excede el límite de 2 Mb.`
-                                );
+                                MessageBox.warning(`El archivo "${file.name}" excede el límite de 2 Mb.`);
                                 return;
                             }
-
-                            if (!(file.type === "application/pdf" ||
-                                file.type === "text/xml" ||
-                                file.type === "application/xml")) {
-                                MessageBox.error(
-                                    `El archivo "${file.name}" no es válido. Solo se permiten PDF o XML.`
-                                );
+                            if (!(file.type === "application/pdf" || file.type === "text/xml" || file.type === "application/xml")) {
+                                MessageBox.warning(`El archivo "${file.name}" no es válido. Solo se permiten PDF o XML.`);
                                 return;
                             }
-                            oFileList.addItem(new sap.m.StandardListItem({ title: file.name }));
+                            oFileList.addItem(new StandardListItem({ title: file.name }));
                         });
                     }
-
                 });
-
-                const oAnexosLabel = new sap.m.Label({
+                const oAnexosLabel = new Label({
                     text: "Anexos (0)",
                     design: "Bold",
                     width: "100%",
                     textAlign: "Center"
                 }).addStyleClass("sapUiTinyMarginTop");
-
-                const oFileList = new sap.m.List({
+                const oFileList = new List({
                     headerText: "Archivos seleccionados",
                     visible: true,
                     items: []
                 });
-
-                this._oUploadDialog = new sap.m.Dialog({
+                this._oUploadDialog = new Dialog({
                     title: "Cargar Archivos CFDI",
                     contentWidth: "550px",
                     contentHeight: "300px",
                     verticalScrolling: true,
                     horizontalScrolling: false,
                     content: [
-                        new sap.m.VBox({
+                        new VBox({
                             alignItems: "Center",
                             justifyContent: "Center",
                             width: "100%",
                             items: [
                                 oAnexosLabel,
-                                new sap.ui.core.Icon({ src: "sap-icon://document", size: "4rem" }),
-                                new sap.m.Label({ text: "2 Mb", design: "Bold" }),
-                                new sap.m.Text({ text: "Selecciona o Arrastra el XML y PDF", textAlign: "Center" }).addStyleClass("sapUiSmallMarginTop"),
+                                new Icon({ src: "sap-icon://document", size: "4rem" }),
+                                new Label({ text: "2 Mb", design: "Bold" }),
+                                new Text({ text: "Selecciona o Arrastra el XML y PDF", textAlign: "Center" }).addStyleClass("sapUiSmallMarginTop"),
                                 oFileUploader,
                                 oFileList.addStyleClass("sapUiSmallMarginTop")
                             ]
                         })
                     ],
-                    beginButton: new sap.m.Button({
+                    beginButton: new Button({
                         text: "Subir",
                         type: "Emphasized",
                         press: async function () {
@@ -192,42 +354,33 @@ sap.ui.define([
                             let xmlFile = null;
                             let isTherePDF = false;
                             let isThereXML = false;
-
                             for (let i = 0; i < aFiles.length; i++) {
                                 const oFile = aFiles[i];
                                 const sName = oFile.name.split(".")[0];
                                 const isValidName = /[a-zA-Z0-9]/.test(sName);
                                 if (!sName || !isValidName) {
-                                    MessageBox.error("Los nombres de los archivos deben contener letras y/o números");
+                                    MessageBox.warning("Los nombres de los archivos deben contener letras y/o números");
                                     return;
                                 }
-
                                 if (oFile.type === "application/pdf") {
                                     isTherePDF = true;
                                 }
-
                                 if (oFile.type === "text/xml" || oFile.type === "application/xml") {
                                     isThereXML = true;
                                 }
                             }
-
                             if (!isTherePDF || !isThereXML) {
-                                MessageBox.error("Se requiere un documento XML y un PDF");
+                                MessageBox.warning("Se requiere un documento XML y un PDF");
                                 return;
                             }
-
                             BusyIndicator.show(100);
-
                             for (const file of aFiles) {
                                 const tipo = file.type;
-
                                 const oContext = aSelected[0].getBindingContext("PCModel");
                                 const oData = oContext.getObject();
-
                                 const proveedorId = oData.Supplier;
                                 const sociedadId = oData.CompanyCode;
                                 const fechaFactura = oData.PaymentDate?.split('T')[0];
-
                                 if (tipo === "application/pdf") {
                                     pdfFile = file;
                                 } else if (tipo === "text/xml" || tipo === "application/xml") {
@@ -235,7 +388,6 @@ sap.ui.define([
                                     const reader = new FileReader();
                                     reader.onload = async function (e) {
                                         const xmlBase64 = btoa(unescape(encodeURIComponent(e.target.result)));
-
                                         const payload = {
                                             xmlBase64,
                                             proveedorId,
@@ -243,22 +395,16 @@ sap.ui.define([
                                             tipoDocumento: "P",
                                             fechaFactura
                                         };
-
                                         try {
-                                            // Consultar primero el valor de ValidacionPAC
                                             const validacionPAC = await oController.getValidacionPAC();
-
                                             let urlValidacion;
                                             if (validacionPAC) {
-                                                // Si ValidacionPAC es true, usar ValidarCFDIListo
                                                 urlValidacion = "/odata/v4/cfdipayment/ValidarFacturaReglasPac";
-                                                console.log("[Validación] Usando ValidarCFDIListo (validación PAC activada)");
+                                                console.log("[Validación] Usando ValidarFacturaReglasPac (validación PAC activada)");
                                             } else {
-                                                // Si ValidacionPAC es false, usar ValidarFactura
                                                 urlValidacion = "/odata/v4/cfdipayment/ValidarFactura";
                                                 console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
                                             }
-
                                             const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
@@ -268,19 +414,16 @@ sap.ui.define([
                                                 body: JSON.stringify(payload),
                                                 credentials: "include"
                                             });
-
                                             if (!res.ok) {
                                                 const errText = await res.text();
-                                                sap.m.MessageBox.error("Error al validar complemento de pago:\n" + errText);
+                                                sap.m.MessageBox.warning("Error al validar complemento de pago:\n" + errText);
                                                 return;
                                             }
-
                                             const data = await res.json();
                                             if (data.valido) {
                                                 if (data.datos) {
                                                     const oContext = aSelected[0].getBindingContext("PCModel");
                                                     const oData = oContext.getObject();
-
                                                     data.datos.Items = [{
                                                         MaterialDocument: oData.MaterialDocument || "",
                                                         MaterialDocumentItem: oData.MaterialDocumentItem || "1",
@@ -290,10 +433,8 @@ sap.ui.define([
                                                         Plant: oData.Plant || data.datos.BUKRS,
                                                         QuantityInEntryUnit: oData.QuantityInEntryUnit || 1
                                                     }];
-
                                                     data.datos.ReferenceDocument = oData.ReferenceDocument;
                                                     data.datos.FixedUUID = data.datos.Comprobante?.['cfdi:CfdiRelacionados']?.['cfdi:CfdiRelacionado']?.['@_UUID'] || null;
-
                                                     oController._mostrarResumenCFDI(data.datos, pdfFile, xmlFile);
                                                 }
                                             } else {
@@ -302,25 +443,22 @@ sap.ui.define([
                                                 if (sDuplicatedMsg) {
                                                     oController._showDuplicatedUUIDMessage(sDuplicatedMsg, aSelected);
                                                 } else {
-                                                    MessageBox.error("Factura inválida:\n" + errores.join("\n"));
+                                                    MessageBox.warning("Factura inválida:\n" + errores.join("\n"));
                                                 }
                                             }
-
                                             BusyIndicator.hide();
                                         } catch (err) {
-                                            MessageBox.error("Error al validar factura:\n" + err.message);
+                                            MessageBox.warning("Error al validar factura:\n" + err.message);
                                             BusyIndicator.hide();
                                         }
                                     };
                                     reader.readAsBinaryString(file);
                                 }
                             }
-
                             oController._oUploadDialog.close();
                         }
-
                     }),
-                    endButton: new sap.m.Button({
+                    endButton: new Button({
                         text: "Cerrar",
                         type: "Reject",
                         press: function () {
@@ -333,7 +471,6 @@ sap.ui.define([
                     }
                 });
             }
-
             this._oUploadDialog.open();
         },
 
@@ -360,16 +497,16 @@ sap.ui.define([
                                 resolve(validacionPAC);
                             } catch (err) {
                                 console.error("[getValidacionPAC] Error parseando ParamValue:", err);
-                                resolve(false); // Valor por defecto
+                                resolve(false);
                             }
                         } else {
                             console.log("[getValidacionPAC] No se encontraron parámetros, usando valor por defecto: false");
-                            resolve(false); // Valor por defecto
+                            resolve(false);
                         }
                     })
                     .catch(err => {
                         console.error("[getValidacionPAC] Error:", err);
-                        resolve(false); // Valor por defecto en caso de error
+                        resolve(false);
                     });
             });
         },
@@ -397,7 +534,6 @@ sap.ui.define([
                     oDialog.destroy();
                 }
             });
-
             oDialog.open();
         },
 
@@ -462,27 +598,22 @@ sap.ui.define([
                     oDialog.destroy();
                 }
             });
-
             oDialog.open();
         },
 
         _verPDF: function (oFile) {
             if (!oFile) {
-                sap.m.MessageToast.show("No hay archivo para visualizar");
+                MessageToast.show("No hay archivo para visualizar");
                 return;
             }
-
             if (oFile.type !== "application/pdf") {
-                sap.m.MessageToast.show("El archivo seleccionado no es un PDF válido");
+                MessageToast.show("El archivo seleccionado no es un PDF válido");
                 return;
             }
-
             const sFileUrl = URL.createObjectURL(oFile);
-
             jQuery.sap.addUrlWhitelist("blob");
-
             if (!this._pdfViewer) {
-                this._pdfViewer = new sap.m.PDFViewer({
+                this._pdfViewer = new PDFViewer({
                     width: "auto",
                     source: sFileUrl,
                     title: "Visualización de PDF",
@@ -493,29 +624,31 @@ sap.ui.define([
             } else {
                 this._pdfViewer.setSource(sFileUrl);
             }
-
             this._pdfViewer.open();
         },
 
         _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
             const oTable = this.getView().byId("complPagoTbl");
             const aSelected = oTable.getSelectedItems();
-            const nMaxQntyTolerance = 150;
-            const aDeviations = [];
-            let sInvoiceStatus = "5";
 
-            const oElement = aSelected[0];
-            const oContext = oElement.getBindingContext("PCModel");
-            const oData = oContext.getObject();
-            const nTotalWithTax = oData.Ammount + (oData.Ammount * 0.16);
+            // === Validar tolerancia (tolerancia 0: exige monto exacto) ===
+            const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
 
-            if (nTotalWithTax + nMaxQntyTolerance < Number(datosCFDI.TOTAL)) {
-                const nDeviation = Math.abs(nTotalWithTax - Number(datosCFDI.TOTAL));
-                aDeviations.push(nDeviation);
+            if (aDeviations.length > 0) {
+                const dev = aDeviations[0];
+                MessageBox.error(
+                    `La diferencia de ${dev.deviation.toFixed(2)} no está permitida.\n` +
+                    `El monto debe coincidir exactamente con el esperado (${dev.expected.toFixed(2)}).\n` +
+                    `Monto recibido en el complemento: ${dev.received.toFixed(2)}.`
+                );
+                return; // Bloquea el proceso de subida
             }
 
             BusyIndicator.show(100);
             try {
+                const oElement = aSelected[0];
+                const oContext = oElement.getBindingContext("PCModel");
+                const oData = oContext.getObject();
                 const payload = {
                     data: {
                         "DocumentNumber": oData.PaymentDocument,
@@ -530,7 +663,6 @@ sap.ui.define([
                         "UUID": datosCFDI.UUID
                     }
                 };
-
                 const res = await fetch("/odata/v4/cfdipayment/Upload", {
                     method: "POST",
                     headers: {
@@ -540,18 +672,15 @@ sap.ui.define([
                     body: JSON.stringify(payload),
                     credentials: "include"
                 });
-
                 if (!res.ok) {
                     const errText = await res.text();
                     MessageBox.error("Error al subir a Complemento de Pago:\n" + errText);
                     BusyIndicator.hide();
                     return;
                 }
-
                 const data = await res.json();
                 console.log("[_subirAFI] Respuesta Upload:", data);
 
-                //  Adjuntar PDF
                 let oMessagePDF = { success: false, message: "PDF no adjuntado" };
                 if (pdfFile) {
                     try {
@@ -563,7 +692,6 @@ sap.ui.define([
                             supplier: oData.Supplier,
                             pdfBase64: pdfBase64
                         };
-
                         const pdfRes = await fetch("/odata/v4/cfdipayment/AdjuntarFacturaPDF", {
                             method: "POST",
                             headers: {
@@ -573,7 +701,6 @@ sap.ui.define([
                             body: JSON.stringify(pdfPayload),
                             credentials: "include"
                         });
-
                         if (pdfRes.ok) {
                             const pdfData = await pdfRes.json();
                             oMessagePDF = {
@@ -581,21 +708,14 @@ sap.ui.define([
                                 message: pdfData.mensaje || "PDF adjuntado correctamente"
                             };
                         } else {
-                            oMessagePDF = {
-                                success: false,
-                                message: "Error al adjuntar PDF"
-                            };
+                            oMessagePDF = { success: false, message: "Error al adjuntar PDF" };
                         }
                     } catch (pdfErr) {
                         console.error("[_subirAFI] Error adjuntar PDF:", pdfErr);
-                        oMessagePDF = {
-                            success: false,
-                            message: "Error al adjuntar PDF: " + pdfErr.message
-                        };
+                        oMessagePDF = { success: false, message: "Error al adjuntar PDF: " + pdfErr.message };
                     }
                 }
 
-                //  Adjuntar XML
                 let oMessageXML = { success: false, message: "XML no adjuntado" };
                 if (xmlFile) {
                     try {
@@ -607,7 +727,6 @@ sap.ui.define([
                             supplier: oData.Supplier,
                             xmlBase64: xmlBase64
                         };
-
                         const xmlRes = await fetch("/odata/v4/cfdipayment/AdjuntarFacturaXML", {
                             method: "POST",
                             headers: {
@@ -617,7 +736,6 @@ sap.ui.define([
                             body: JSON.stringify(xmlPayload),
                             credentials: "include"
                         });
-
                         if (xmlRes.ok) {
                             const xmlData = await xmlRes.json();
                             oMessageXML = {
@@ -625,24 +743,18 @@ sap.ui.define([
                                 message: xmlData.mensaje || "XML adjuntado correctamente"
                             };
                         } else {
-                            oMessageXML = {
-                                success: false,
-                                message: "Error al adjuntar XML"
-                            };
+                            oMessageXML = { success: false, message: "Error al adjuntar XML" };
                         }
                     } catch (xmlErr) {
                         console.error("[_subirAFI] Error adjuntar XML:", xmlErr);
-                        oMessageXML = {
-                            success: false,
-                            message: "Error al adjuntar XML: " + xmlErr.message
-                        };
+                        oMessageXML = { success: false, message: "Error al adjuntar XML: " + xmlErr.message };
                     }
                 }
 
                 const aResults = [
                     {
-                        label: "Factura a Base de Datos",
-                        message: `Factura cargada en la base de datos}`,
+                        label: "Complemento a Base de Datos",
+                        message: `Complemento cargado exitosamente`,
                         icon: "sap-icon://accounting-document-verification",
                         success: true
                     },
@@ -662,26 +774,26 @@ sap.ui.define([
 
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
-
             } catch (err) {
                 console.error("[_subirAFI] Error:", err);
-                MessageBox.error("Error al cargar factura a la base de datos:\n" + (err.message || "Error desconocido"));
+                MessageBox.error("Error al cargar complemento: " + (err.message || "Error desconocido"));
                 BusyIndicator.hide();
             }
         },
 
         _showResultDialog: function (aResults) {
-            const oVBox = new sap.m.VBox({
+            const oController = this;
+            const oVBox = new VBox({
                 items: [
                     ...aResults.map(function (item) {
-                        return new sap.m.VBox({
+                        return new VBox({
                             items: [
-                                new sap.m.ObjectStatus({
+                                new ObjectStatus({
                                     text: item.label,
                                     icon: item.icon,
                                     state: item.success ? "Success" : "Error"
                                 }),
-                                new sap.m.Text({
+                                new Text({
                                     text: item.message
                                 }).addStyleClass("sapUiSmallMarginBottom")
                             ]
@@ -689,21 +801,23 @@ sap.ui.define([
                     })
                 ]
             });
-
-            const oDialog = new sap.m.Dialog({
+            const oDialog = new Dialog({
                 title: "Resultados",
                 content: oVBox,
-                beginButton: new sap.m.Button({
+                beginButton: new Button({
                     text: "Cerrar",
                     press: function () {
                         oDialog.close();
                     }
                 }),
                 afterClose: function () {
+                    if (oController && typeof oController.getPaymentComplements === 'function') {
+                        oController.getPaymentComplements();
+                        console.log("[_showResultDialog] Tabla de pagos recargada al cerrar dialog");
+                    }
                     oDialog.destroy();
                 }
             }).addStyleClass("sapUiResponsivePadding--content sapUiResponsivePadding--header sapUiResponsivePadding--footer sapUiResponsivePadding--subHeader");
-
             oDialog.open();
         },
 
@@ -711,43 +825,10 @@ sap.ui.define([
             MessageBox.confirm(`¿Deseas eliminar la factura ${folio}?`, {
                 onClose: (oAction) => {
                     if (oAction === MessageBox.Action.OK) {
-                        sap.m.MessageToast.show(`Factura ${folio} eliminada`);
+                        MessageToast.show(`Factura ${folio} eliminada`);
                     }
                 }
             });
-        },
-
-        _getDeviationConfirmation(aDeviations, nMaxQntyTolerance) {
-            const nDeviation = aDeviations[0];
-            const pConfirmation = new Promise((resolve) => {
-                const oDialog = new Dialog({
-                    type: "Message",
-                    title: "Desviación",
-                    content: new Text({ text: `La diferencia ${nDeviation} supera la desviación máxima ${nMaxQntyTolerance}` }),
-                    beginButton: new Button({
-                        type: "Emphasized",
-                        text: "Enviar con desviación",
-                        press: function () {
-                            resolve("Enviar");
-                            oDialog.close();
-                        }.bind(this)
-                    }),
-                    endButton: new Button({
-                        text: "Cargar otra factura",
-                        press: function () {
-                            resolve("Cancelar");
-                            oDialog.close();
-                        }.bind(this)
-                    }),
-                    afterClose: function () {
-                        oDialog.destroy();
-                    }
-                });
-
-                oDialog.open();
-            });
-
-            return pConfirmation;
         },
 
         _fileToBase64(file) {
@@ -760,19 +841,16 @@ sap.ui.define([
                 };
                 reader.onerror = error => reject(error);
             });
-
             return pFile;
         },
 
         formatDate(sDate) {
             if (!sDate) return "";
-
             const oDate = new Date(sDate);
             const oDateFormat = DateFormat.getInstance({
                 style: "medium",
                 UTC: true
             });
-
             return oDateFormat.format(oDate);
         }
     });
