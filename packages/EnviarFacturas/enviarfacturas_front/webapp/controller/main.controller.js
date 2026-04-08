@@ -415,7 +415,8 @@ sap.ui.define([
                                             proveedorId,
                                             sociedadId,
                                             tipoDocumento: "I",
-                                            fechaFactura
+                                            fechaFactura,
+                                            documentDate: oData.DocumentDate?.split('T')[0]
                                         };
                                         try {
                                             const validacionPAC = await oController.getValidacionPAC();

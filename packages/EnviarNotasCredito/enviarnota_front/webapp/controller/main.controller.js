@@ -341,7 +341,8 @@ sap.ui.define([
                                             proveedorId,
                                             sociedadId,
                                             tipoDocumento: "E",
-                                            fechaFactura
+                                            fechaFactura,
+                                            documentDate: oData.DocumentDate?.split('T')[0]
                                         };
 
                                         try {
