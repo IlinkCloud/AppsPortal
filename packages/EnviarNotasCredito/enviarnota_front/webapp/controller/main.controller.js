@@ -335,6 +335,9 @@ sap.ui.define([
                                     const reader = new FileReader();
                                     reader.onload = async function (e) {
                                         const xmlBase64 = btoa(unescape(encodeURIComponent(e.target.result)));
+                                        const documentDate = oFirstData.DocumentDate
+                                            ? oFirstData.DocumentDate.toISOString().split('T')[0]
+                                            : null;
                                         // === Tipo de documento "E" para nota de crédito ===
                                         const payload = {
                                             xmlBase64,
@@ -342,7 +345,7 @@ sap.ui.define([
                                             sociedadId,
                                             tipoDocumento: "E",
                                             fechaFactura,
-                                            documentDate: oData.DocumentDate?.split('T')[0]
+                                            documentDate: documentDate
                                         };
 
                                         try {
