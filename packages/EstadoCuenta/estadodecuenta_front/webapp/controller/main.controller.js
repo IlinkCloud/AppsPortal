@@ -35,7 +35,8 @@ sap.ui.define([
       this.getView().addEventDelegate({
         onBeforeShow: () => {
           const hoy = new Date();
-          const desde = subtractDays(hoy, daysBackDefault);
+          const desde = new Date(hoy.getFullYear(), 0, 1); // 1 de enero del año actual
+
           this.FechaIni = desde;
           this.FechaFin = hoy;
           this.getStatements(fnFormat(desde), fnFormat(hoy));
@@ -45,7 +46,9 @@ sap.ui.define([
 
     getStatements: function (sDateFrom, sDateTo) {
       let finalDate = sDateTo ? new Date(sDateTo) : new Date();
-      let initDate = sDateFrom ? new Date(sDateFrom) : subtractDays(finalDate, daysBackDefault);
+
+      const currentYear = finalDate.getFullYear();
+      let initDate = new Date(currentYear, 0, 1); // Mes 0 = Enero
       BusyIndicator.show(100);
 
       const url = `/odata/v4/account-statement/AccountStatement?initDate=${fnFormat(initDate)}&finalDate=${fnFormat(finalDate)}`;
