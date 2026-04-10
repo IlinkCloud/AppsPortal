@@ -2,116 +2,125 @@ _schema-version: "3.2"
 ID: Aclaraciones
 version: 0.0.1
 modules:
-- name: aclaraciones-approuter
-  type: approuter.nodejs
-  path: aclaraciones-approuter
-   #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  - name: Aclaraciones_html_repo_runtime
-  - name: uaa_Aclaraciones
-  - name: Aclaraciones_saas_registry # Manual
-  - name: Aclaraciones-destination-service
-    group: destinations
+  - name: aclaraciones-approuter
+    type: approuter.nodejs
+    path:
+      aclaraciones-approuter
+      #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    disk-quota: 256M
-    memory: 256M
-     #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-    - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: Aclaraciones_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: Aclaraciones_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - aclaracionesfront.zip
-      name: aclaracionesfront
-      target-path: resources/
-- name: aclaracionesfront
-  type: html5
-  path: aclaraciones_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #- name: Aclaraciones_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_Aclaraciones
+      - name: Aclaraciones_saas_registry # Manual
+      #- name: Aclaraciones-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      disk-quota: 256M
+      memory:
+        256M
+        #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: Aclaraciones_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: Aclaraciones_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - aclaracionesfront.zip
+          name: aclaracionesfront
+          target-path: resources/
+  - name: aclaracionesfront
+    type: html5
+    path: aclaraciones_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-- name: Aclaraciones_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
-- name: uaa_Aclaraciones
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: Aclaraciones-xsuaa-service
-    service-plan: application
-- name: Aclaraciones_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
-             #-------------------Manual-----------------------------------------------------------------
-- name: Aclaraciones_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: ${appname}-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicacion Aclaraciones
-      displayName: Aclaraciones
-      
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
-#-----------------------------------------------------------------------------------------
-- name: Aclaraciones-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Aclaraciones-destination-service
-    service-plan: lite
+  #- name: Aclaraciones_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
+  - name: uaa_Aclaraciones
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: Aclaraciones-xsuaa-service
+      service-plan: application
+  - name: Aclaraciones_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan:
+        app-host
+        #-------------------Manual-----------------------------------------------------------------
+  - name: Aclaraciones_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: ${appname}-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicacion Aclaraciones
+        displayName: Aclaraciones
+
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+  #-----------------------------------------------------------------------------------------
+  #- name: Aclaraciones-destination-service
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    config:
+  #      HTML5Runtime_enabled: false
+  #      init_data:
+  #        instance:
+  #          destinations:
+  #          - Authentication: NoAuthentication
+  #            Name: ui5
+  #            ProxyType: Internet
+  #            Type: HTTP
+  #            URL: https://ui5.sap.com
+  #          existing_destinations_policy: update
+  #      version: 1.0.0
+  #    service: destination
+  #    service-name: Aclaraciones-destination-service
+  #    service-plan: lite
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 parameters:
   appname: aclaraciones #------Manual
   deploy_mode: html5-repo
