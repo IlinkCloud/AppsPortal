@@ -1,0 +1,44 @@
+_schema-version: "3.2"
+ID: EnviarNotaExtDev-extension
+extends: EnviarNotaExt
+
+parameters:
+  appname: enviarnotaext-dev
+  subdomain: ${org}
+
+modules:
+  - name: enviarnotaext-approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+
+resources:
+
+  - name: uaa_EnviarNotaExt
+    parameters:
+      service-name: ${appname}-xsuaa
+      config:
+        xsappname: ${appname}
+
+  - name: EnviarNotaExt_saas_registry
+    parameters:
+      service-name: ${appname}-saas-registry
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        displayName: Nota Extranjera Dev
+        description: Aplicación Nota Extranjera - Ambiente Dev
+
+  - name: AppsPortalFront-destination-service
+    parameters:
+      service-name: AppsPortalFront-dev-destination
+
+  - name: EnviarNotaExt_html_repo_host
+    parameters:
+      service-name: EnviarNotaExt-Dev-html5-host
+
+  - name: AppsPortalFront_html_repo_runtime
+    parameters:
+      service-name: AppsPortalFront-dev-html5-runtime
