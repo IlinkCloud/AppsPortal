@@ -3,103 +3,104 @@ ID: EnviarFacturaExt
 version: 0.0.1
 
 modules:
-- name: enviarfacturaext-approuter
-  type: approuter.nodejs
-  path: enviarfacturaext-approuter
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    CJ_PROTECT_WHITELIST: [{"host":"*.cfapps.us10.hana.ondemand.com"}]
-    SEND_XFRAMEOPTIONS: false
-  requires:
-    - name: EnviarFacturaExt_html_repo_runtime
-    - name: uaa_EnviarFacturaExt
-    - name: EnviarFacturaExt_saas_registry
-    - name: frontend-destination
-      group: destinations
-      properties:
-        forwardAuthToken: false
-        name: ui5
-        url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-    routes:
-      - route: https://${subdomain}-${appname}.${default-domain}
-
-- name: EnviarFacturaExt_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-    - name: EnviarFacturaExt_html_repo_host
-      parameters:
-        content-target: true
-  build-parameters:
-    build-result: resources
+  - name: enviarfacturaext-approuter
+    type: approuter.nodejs
+    path: enviarfacturaext-approuter
+    properties:
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
     requires:
-      - artifacts:
-          - enviarfacturaextfront.zip
-        name: enviarfacturaextfront
-        target-path: resources/
+      #- name: EnviarFacturaExt_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EnviarFacturaExt
+      - name: EnviarFacturaExt_saas_registry
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
 
-- name: enviarfacturaextfront
-  type: html5
-  path: enviarfacturaext_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-      - npm install
-      - npm run build:cf
-    supported-platforms: []
+  - name: EnviarFacturaExt_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: EnviarFacturaExt_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - enviarfacturaextfront.zip
+          name: enviarfacturaextfront
+          target-path: resources/
+
+  - name: enviarfacturaextfront
+    type: html5
+    path: enviarfacturaext_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 
 resources:
-- name: EnviarFacturaExt_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
+  #- name: EnviarFacturaExt_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
 
-- name: uaa_EnviarFacturaExt
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: EnviarFacturaExt-xsuaa-service
-    service-plan: application
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
 
-- name: EnviarFacturaExt_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
+  - name: uaa_EnviarFacturaExt
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: EnviarFacturaExt-xsuaa-service
+      service-plan: application
 
-- name: EnviarFacturaExt_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: EnviarFacturaExt-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicación Factura Extranjera
-      displayName: Factura Extranjera
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
+  - name: EnviarFacturaExt_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
 
-- name: frontend-destination
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: destination
-    service-plan: lite
+  - name: EnviarFacturaExt_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: EnviarFacturaExt-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicación Factura Extranjera
+        displayName: Factura Extranjera
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 
 parameters:
   appname: enviarfacturaext
