@@ -4,11 +4,11 @@ version: 0.0.1
 modules:
   - name: aclaraciones-approuter
     type: approuter.nodejs
-    path:
-      aclaraciones-approuter
-      #------------------Manual------------------------------------------------------------------
+    path: aclaraciones-approuter
+    #------------------Manual------------------------------------------------------------------
     properties:
       TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
       SEND_XFRAMEOPTIONS: false
     #------------------------------------------------------------------------------------------
     requires:
