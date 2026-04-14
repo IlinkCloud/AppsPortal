@@ -1,4 +1,5 @@
-{ "welcomeFile": "/devolucionesfront",
+{
+  "welcomeFile": "/devolucionesfront",
   "authenticationMethod": "route",
   "routes": [
     {
@@ -12,5 +13,4 @@
   "whitelistService": {
     "endpoint": "/whitelist/service"
   }
-  
 }

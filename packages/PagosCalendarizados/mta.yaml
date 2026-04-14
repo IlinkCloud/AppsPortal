@@ -1,71 +1,71 @@
 _schema-version: "3.2"
-ID: pagoscalendarizados
+ID: PagosCalendarizados
 version: 0.0.1
 
 modules:
-#===========================================================
-# 1. AppRouter Module
-#===========================================================
-- name: pagoscalendarizados-approuter
-  type: approuter.nodejs
-  path: pagoscalendarizados-approuter
-  #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    CJ_PROTECT_WHITELIST: [{"host": "*.cfapps.us10.hana.ondemand.com"}]
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-    # Adaptado al formato del ejemplo "EstadoCuenta"
-    - name: frontend-html-repo-runtime
-    - name: uaa_pagoscalendarizados
-    - name: pagoscalendarizados_saas_registry # Manual
-    - name: frontend-destination
-      group: destinations
-      properties:
-        forwardAuthToken: false
-        name: ui5
-        url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-    #-------------Manual--------------------------------------
-    routes:
-      - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-
-#===========================================================
-# 2. UI Deployer
-#===========================================================
-- name: pagoscalendarizados_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-    - name: pagoscalendarizados_html_repo_host
-      parameters:
-        content-target: true
-  build-parameters:
-    build-result: resources
+  #===========================================================
+  # 1. AppRouter Module
+  #===========================================================
+  - name: pagoscalendarizados-approuter
+    type: approuter.nodejs
+    path: pagoscalendarizados-approuter
+    #------------------Manual------------------------------------------------------------------
+    properties:
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-      - artifacts:
-          - pagoscalendarizadosfront.zip
-        name: pagoscalendarizadosfront
-        target-path: resources/
+      # Adaptado al formato del ejemplo "EstadoCuenta"
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_PagosCalendarizados
+      - name: PagosCalendarizados_saas_registry # Manual
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+      #-------------Manual--------------------------------------
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
 
-#===========================================================
-# 3. HTML5 Frontend App
-#===========================================================
-- name: pagoscalendarizadosfront
-  type: html5
-  path: pagoscalendarizados_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-      - npm install
-      - npm run build:cf
-    supported-platforms: []
+  #===========================================================
+  # 2. UI Deployer
+  #===========================================================
+  - name: PagosCalendarizados_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: PagosCalendarizados_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - pagoscalendarizadosfront.zip
+          name: pagoscalendarizadosfront
+          target-path: resources/
+
+  #===========================================================
+  # 3. HTML5 Frontend App
+  #===========================================================
+  - name: pagoscalendarizadosfront
+    type: html5
+    path: pagoscalendarizados_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 
 #===========================================================
 # 4. Recursos (Services)
@@ -74,24 +74,24 @@ resources:
   #----------------------------------------------------------
   # HTML5 Repo Runtime (existente)
   #----------------------------------------------------------
-  - name: frontend-html-repo-runtime
+  - name: AppsPortalFront_html_repo_runtime
     type: org.cloudfoundry.existing-service
 
   #----------------------------------------------------------
   # XSUAA Service
   #----------------------------------------------------------
-  - name: uaa_pagoscalendarizados
+  - name: uaa_PagosCalendarizados
     type: org.cloudfoundry.managed-service
     parameters:
       path: ./xs-security.json
       service: xsuaa
-      service-name: pagoscalendarizados-xsuaa-service
+      service-name: PagosCalendarizados-xsuaa-service
       service-plan: application
 
   #----------------------------------------------------------
   # HTML5 Repo Host
   #----------------------------------------------------------
-  - name: pagoscalendarizados_html_repo_host
+  - name: PagosCalendarizados_html_repo_host
     type: org.cloudfoundry.managed-service
     parameters:
       service: html5-apps-repo
@@ -100,11 +100,11 @@ resources:
   #----------------------------------------------------------
   # SaaS Registry
   #----------------------------------------------------------
-  - name: pagoscalendarizados_saas_registry
+  - name: PagosCalendarizados_saas_registry
     type: org.cloudfoundry.managed-service
     parameters:
       service: saas-registry
-      service-name: pagoscalendarizados-saas-registry
+      service-name: PagosCalendarizados-saas-registry
       service-plan: application
       config:
         xsappname: ${appname}
@@ -124,14 +124,14 @@ resources:
   #----------------------------------------------------------
   # Destination Service (existente)
   #----------------------------------------------------------
-  - name: frontend-destination
+  - name: AppsPortalFront-destination-service
     type: org.cloudfoundry.existing-service
 
 #===========================================================
 # 5. Parámetros globales
 #===========================================================
 parameters:
-  appname: pagoscalendarizados   #------Manual
+  appname: pagoscalendarizados #------Manual
   deploy_mode: html5-repo
   enable-parallel-deployments: true
-  subdomain: ${org}              #------Manual
+  subdomain: ${org} #------Manual

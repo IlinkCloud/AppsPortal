@@ -1,5 +1,5 @@
 _schema-version: "3.2"
-ID: Mispedidos
+ID: MisPedidos
 version: 0.0.1
 modules:
   - name: mispedidos-approuter
@@ -8,16 +8,16 @@ modules:
     #------------------Manual------------------------------------------------------------------
     properties:
       TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-      CJ_PROTECT_WHITELIST: [{"host":"*.cfapps.us10.hana.ondemand.com"}]
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
       SEND_XFRAMEOPTIONS: false
     #------------------------------------------------------------------------------------------
     requires:
       #  - name: Mispedidos_html_repo_runtime
-      - name: frontend-html-repo-runtime
-      - name: uaa_Mispedidos
-      - name: Mispedidos_saas_registry # Manual
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_MisPedidos
+      - name: MisPedidos_saas_registry # Manual
       #  - name: Mispedidos-destination-service
-      - name: frontend-destination
+      - name: AppsPortalFront-destination-service
         group: destinations
         properties:
           forwardAuthToken: false
@@ -33,12 +33,12 @@ modules:
       routes:
         - route: https://${subdomain}-${appname}.${default-domain}
       #----------------------------------------------------------
-  - name: Mispedidos_ui_deployer
+  - name: MisPedidos_ui_deployer
     type: com.sap.application.content
     path: .
     requires:
       #- name: frontend-html-repo-host
-      - name: Mispedidos_html_repo_host
+      - name: MisPedidos_html_repo_host
         parameters:
           content-target: true
     build-parameters:
@@ -59,7 +59,7 @@ modules:
         - npm run build:cf
       supported-platforms: []
 resources:
-  - name: frontend-html-repo-runtime
+  - name: AppsPortalFront_html_repo_runtime
     type: org.cloudfoundry.existing-service
 
   #- name: Mispedidos_html_repo_runtime
@@ -68,28 +68,25 @@ resources:
   #    service: html5-apps-repo
   #    service-plan: app-runtime
 
-  - name: uaa_Mispedidos
+  - name: uaa_MisPedidos
     type: org.cloudfoundry.managed-service
     parameters:
       path: ./xs-security.json
       service: xsuaa
-      service-name: Mispedidos-xsuaa-service
+      service-name: MisPedidos-xsuaa-service
       service-plan: application
 
-  #- name: frontend-html-repo-host
-  #  type: org.cloudfoundry.existing-service
-  
-  - name: Mispedidos_html_repo_host
+  - name: MisPedidos_html_repo_host
     type: org.cloudfoundry.managed-service
     parameters:
       service: html5-apps-repo
       service-plan: app-host
   #-------------------Manual-----------------------------------------------------------------
-  - name: Mispedidos_saas_registry
+  - name: MisPedidos_saas_registry
     type: org.cloudfoundry.managed-service
     parameters:
       service: saas-registry
-      service-name: Mispedidos-saas-registry
+      service-name: MisPedidos-saas-registry
       service-plan: application
       config:
         xsappname: ${appname}
@@ -124,8 +121,10 @@ resources:
   #    service: destination
   #    service-name: Mispedidos-destination-service
   #    service-plan: lite
-  - name: frontend-destination
+
+  - name: AppsPortalFront-destination-service
     type: org.cloudfoundry.existing-service
+
 parameters:
   appname: mispedidos #------Manual
   deploy_mode: html5-repo

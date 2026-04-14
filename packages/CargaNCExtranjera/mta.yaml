@@ -3,103 +3,104 @@ ID: EnviarNotaExt
 version: 0.0.1
 
 modules:
-- name: enviarnotaext-approuter
-  type: approuter.nodejs
-  path: enviarnotaext-approuter
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    CJ_PROTECT_WHITELIST: [{"host":"*.cfapps.us10.hana.ondemand.com"}]
-    SEND_XFRAMEOPTIONS: false
-  requires:
-    - name: EnviarNotaExt_html_repo_runtime
-    - name: uaa_EnviarNotaExt
-    - name: EnviarNotaExt_saas_registry
-    - name: frontend-destination
-      group: destinations
-      properties:
-        forwardAuthToken: false
-        name: ui5
-        url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-    routes:
-      - route: https://${subdomain}-${appname}.${default-domain}
-
-- name: EnviarNotaExt_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-    - name: EnviarNotaExt_html_repo_host
-      parameters:
-        content-target: true
-  build-parameters:
-    build-result: resources
+  - name: enviarnotaext-approuter
+    type: approuter.nodejs
+    path: enviarnotaext-approuter
+    properties:
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
     requires:
-      - artifacts:
-          - enviarnotaextfront.zip
-        name: enviarnotaextfront
-        target-path: resources/
+      #- name: EnviarNotaExt_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EnviarNotaExt
+      - name: EnviarNotaExt_saas_registry
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
 
-- name: enviarnotaextfront
-  type: html5
-  path: enviarnotaext_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-      - npm install
-      - npm run build:cf
-    supported-platforms: []
+  - name: EnviarNotaExt_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: EnviarNotaExt_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - enviarnotaextfront.zip
+          name: enviarnotaextfront
+          target-path: resources/
+
+  - name: enviarnotaextfront
+    type: html5
+    path: enviarnotaext_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 
 resources:
-- name: EnviarNotaExt_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
+  #- name: EnviarNotaExt_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
 
-- name: uaa_EnviarNotaExt
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: EnviarNotaExt-xsuaa-service
-    service-plan: application
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
 
-- name: EnviarNotaExt_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
+  - name: uaa_EnviarNotaExt
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: EnviarNotaExt-xsuaa-service
+      service-plan: application
 
-- name: EnviarNotaExt_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: EnviarNotaExt-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicación Nota Extranjera
-      displayName: Nota Extranjera
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
+  - name: EnviarNotaExt_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
 
-- name: frontend-destination
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: destination
-    service-plan: lite
+  - name: EnviarNotaExt_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: EnviarNotaExt-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicación Nota Extranjera
+        displayName: Nota Extranjera
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 
 parameters:
   appname: enviarnotaext

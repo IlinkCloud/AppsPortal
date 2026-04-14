@@ -1,0 +1,44 @@
+_schema-version: "3.2"
+ID: PagosCalendarizadosDev-extension
+extends: PagosCalendarizados
+
+parameters:
+  appname: pagoscalendarizados-dev
+  subdomain: ${org}
+
+modules:
+  - name: pagoscalendarizados-approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+
+resources:
+
+  - name: uaa_PagosCalendarizados
+    parameters:
+      service-name: ${appname}-xsuaa
+      config:
+        xsappname: ${appname}
+
+  - name: PagosCalendarizados_saas_registry
+    parameters:
+      service-name: ${appname}-saas-registry
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        displayName: Pagos Calendarizados Dev
+        description: Aplicación Pagos Calendarizados - Ambiente Dev
+
+  - name: AppsPortalFront-destination-service
+    parameters:
+      service-name: AppsPortalFront-dev-destination
+
+  - name: PagosCalendarizados_html_repo_host
+    parameters:
+      service-name: PagosCalendarizados-Dev-html5-host
+
+  - name: AppsPortalFront_html_repo_runtime
+    parameters:
+      service-name: AppsPortalFront-dev-html5-runtime

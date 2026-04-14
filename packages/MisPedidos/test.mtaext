@@ -1,0 +1,44 @@
+_schema-version: "3.2"
+ID: MisPedidosTest-extension
+extends: MisPedidos
+
+parameters:
+  appname: mispedidos-test
+  subdomain: ${org}
+
+modules:
+  - name: mispedidos-approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+
+resources:
+
+  - name: uaa_MisPedidos
+    parameters:
+      service-name: ${appname}-xsuaa
+      config:
+        xsappname: ${appname}
+
+  - name: MisPedidos_saas_registry
+    parameters:
+      service-name: ${appname}-saas-registry
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        displayName: Mis Pedidos Test
+        description: Aplicación Mis Pedidos - Ambiente Test
+
+  - name: AppsPortalFront-destination-service
+    parameters:
+      service-name: AppsPortalFront-test-destination
+
+  - name: MisPedidos_html_repo_host
+    parameters:
+      service-name: MisPedidos-Test-html5-host
+
+  - name: AppsPortalFront_html_repo_runtime
+    parameters:
+      service-name: AppsPortalFront-test-html5-runtime

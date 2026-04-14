@@ -1,0 +1,13 @@
+_schema-version: "3.2"
+ID: AppsPortalFront-extension
+extends: AppsPortalFront
+
+resources:
+
+  - name: AppsPortalFront_html_repo_runtime
+    parameters:
+      service-name: AppsPortalFront-test-html5-runtime
+
+  - name: AppsPortalFront-destination-service
+    parameters:
+      service-name: AppsPortalFront-test-destination
