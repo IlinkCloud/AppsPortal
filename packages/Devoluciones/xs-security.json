@@ -4,28 +4,32 @@
   "description": "Security profile of called application",
   "scopes": [
     {
-      "name": "uaa.user",
-      "description": "UAA"
-    },
-    {
       "name": "$XSAPPNAME.Callback",
       "description": "With this scope set, the callbacks for subscribe, unsubscribe and getDependencies can be called.",
       "grant-as-authority-to-apps": [
         "$XSAPPNAME(application,sap-provisioning,tenant-onboarding)"
       ]
+    },
+    {
+      "name": "$XSAPPNAME.DevolucionesScope",
+      "description": "Scope para aplicación Devoluciones"
     }
   ],
   "role-templates": [
     {
-      "name": "Token_Exchange",
-      "description": "UAA",
+      "name": "DevolucionesRole",
+      "description": "Rol para acceder a la app Devoluciones",
       "scope-references": [
-        "uaa.user"
+        "$XSAPPNAME.DevolucionesScope",
+        "$XSAPPNAME(application,backend).backendscope"
       ]
     }
   ],
+  "foreign-scope-references": [
+    "$XSAPPNAME(application,backend).backendscope"
+  ],
   "oauth2-configuration": {
-    "token-validity": 3600,
+    "token-validity": 14400,
     "redirect-uris": [
       "http*://*.cfapps.*.hana.ondemand.com/**",
       "https*://*s4hana.cloud.sap*/**"
