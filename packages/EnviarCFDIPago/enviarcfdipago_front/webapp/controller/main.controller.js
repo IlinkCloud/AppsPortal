@@ -99,193 +99,6 @@ sap.ui.define([
             this.getPaymentComplements();
         },
 
-        _getTaxRateFromPO: async function (BuyDocument) {
-            console.log(`[TaxRate] Iniciando consulta para PO: ${BuyDocument}`);
-            try {
-                const url = `/odata/v4/cfdipayment/GetTaxRateFromPO?purchaseOrder=${encodeURIComponent(BuyDocument)}`;
-                console.log(`[TaxRate] URL: ${url}`);
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' },
-                    credentials: 'include'
-                });
-                console.log(`[TaxRate] Response status: ${response.status}`);
-                if (!response.ok) {
-                    console.warn(`[TaxRate] HTTP ${response.status} para PO ${BuyDocument}`);
-                    return 0.16;
-                }
-                const data = await response.json();
-                console.log(`[TaxRate] Response data:`, data);
-                const firstItem = data.value?.[0]?.value?.[0] || data.value?.[0];
-                const taxRateDecimal = firstItem?.TaxRateDecimal;
-                const conditionRateRatio = firstItem?.ConditionRateRatio;
-                console.log(`[TaxRate] TaxRateDecimal: ${taxRateDecimal}, ConditionRateRatio: ${conditionRateRatio}`);
-                if (typeof taxRateDecimal === 'number' && !isNaN(taxRateDecimal) && taxRateDecimal > 0) {
-                    console.log(`[TaxRate] PO ${BuyDocument}: ${(taxRateDecimal * 100).toFixed(2)}%`);
-                    return taxRateDecimal;
-                }
-                console.warn(`[TaxRate] Fallback a 16% para PO ${BuyDocument}`);
-                return 0.16;
-            } catch (err) {
-                console.error(`[TaxRate] Error para PO ${BuyDocument}: ${err.message}`);
-                return 0.16;
-            }
-        },
-
-        _validateToleranceWithTax: async function (aSelected, datosCFDI) {
-            console.log(`\n[Tolerancia-Pago] === INICIANDO VALIDACIÓN ===`);
-            console.log(`[Tolerancia-Pago] Documentos seleccionados: ${aSelected.length}`);
-            console.log(`[Tolerancia-Pago] Total CFDI: ${datosCFDI.TOTAL}`);
-
-            // === TOLERANCIA EN 0: Exige monto exacto ===
-            const nMinTolerance = 0;
-            const nMaxTolerance = 0;
-            const aDeviations = [];
-
-            const paymentGroups = new Map();
-            for (let i = 0; i < aSelected.length; i++) {
-                const oElement = aSelected[i];
-                const oContext = oElement.getBindingContext("PCModel");
-                const oData = oContext.getObject();
-                const paymentDoc = oData.PaymentDocument;
-
-                if (!paymentGroups.has(paymentDoc)) {
-                    paymentGroups.set(paymentDoc, {
-                        paymentDoc: paymentDoc,
-                        items: [],
-                        totalAmmount: 0,
-                        lines: []
-                    });
-                }
-                const group = paymentGroups.get(paymentDoc);
-                group.items.push(oData.PositionNumber || oData.MaterialDocumentPos || "1");
-                group.totalAmmount += Number(oData.Ammount) || 0;
-                group.lines.push(oElement);
-            }
-
-            console.log(`[Tolerancia-Pago] Documentos de pago agrupados: ${paymentGroups.size}`);
-
-            for (const [payKey, group] of paymentGroups) {
-                console.log(`\n[Tolerancia-Pago] --- Pago: ${payKey} ---`);
-                console.log(`[Tolerancia-Pago] Items: ${group.items.join(', ')}`);
-                console.log(`[Tolerancia-Pago] Total Ammount agrupado: ${group.totalAmmount.toFixed(2)}`);
-
-                try {
-                    let taxRate = 0.16;
-                    if (group.lines[0]?.getBindingContext("PCModel")?.getObject()?.BuyDocument) {
-                        const po = group.lines[0].getBindingContext("PCModel").getObject().BuyDocument;
-                        taxRate = await this._getTaxRateFromPO(po).catch(err => {
-                            console.warn(`[TaxRate-Pago] Fallback: ${err.message}`);
-                            return 0.16;
-                        });
-                    }
-
-                    console.log(`[Tolerancia-Pago] TaxRate usado: ${(taxRate * 100).toFixed(2)}%`);
-                    const nTotalWithTax = group.totalAmmount * (1 + taxRate);
-                    const nInvoiceTotal = Number(datosCFDI.TOTAL);
-
-                    console.log(`[Tolerancia-Pago] Cálculo:`);
-                    console.log(`   Total Ammount (suma): ${group.totalAmmount.toFixed(2)}`);
-                    console.log(`   TaxRate: ${taxRate}`);
-                    console.log(`   Total con impuesto: ${nTotalWithTax.toFixed(2)}`);
-                    console.log(`   Total complemento: ${nInvoiceTotal}`);
-
-                    const nLowerLimit = nTotalWithTax - nMinTolerance;
-                    const nUpperLimit = nTotalWithTax + nMaxTolerance;
-
-                    console.log(`[Tolerancia-Pago] Límites:`);
-                    console.log(`   Límite inferior: ${nLowerLimit.toFixed(2)}`);
-                    console.log(`   Límite superior: ${nUpperLimit.toFixed(2)}`);
-
-                    if (nInvoiceTotal < nLowerLimit || nInvoiceTotal > nUpperLimit) {
-                        const nDeviation = Math.abs(nTotalWithTax - nInvoiceTotal);
-                        console.log(`[Tolerancia-Pago] DESVIACIÓN DETECTADA: ${nDeviation.toFixed(2)}`);
-                        aDeviations.push({
-                            paymentDoc: payKey,
-                            items: group.items,
-                            expected: nTotalWithTax,
-                            received: nInvoiceTotal,
-                            deviation: nDeviation,
-                            taxRate: taxRate * 100,
-                            totalAmmount: group.totalAmmount
-                        });
-                    } else {
-                        console.log(`[Tolerancia-Pago] Dentro del rango aceptable`);
-                    }
-                } catch (err) {
-                    console.warn(`[Tolerancia-Pago] Error en ${payKey}: ${err.message}`);
-                    continue;
-                }
-            }
-
-            console.log(`\n[Tolerancia-Pago] === FIN VALIDACIÓN ===`);
-            console.log(`[Tolerancia-Pago] Desviaciones encontradas: ${aDeviations.length}`);
-            return aDeviations;
-        },
-
-        _getDeviationConfirmation: function (aDeviations, nMaxQntyTolerance, nMinQntyTolerance) {
-            const firstDeviation = aDeviations[0];
-            const nDeviation = typeof firstDeviation === 'object' ? firstDeviation.deviation : firstDeviation;
-            const paymentDoc = typeof firstDeviation === 'object' ? firstDeviation.paymentDoc : null;
-            const items = typeof firstDeviation === 'object' ? firstDeviation.items : null;
-            const expected = typeof firstDeviation === 'object' ? firstDeviation.expected : null;
-            const received = typeof firstDeviation === 'object' ? firstDeviation.received : null;
-            const totalAmmount = typeof firstDeviation === 'object' ? firstDeviation.totalAmmount : null;
-
-            const isAboveMax = nDeviation > nMaxQntyTolerance;
-            const isBelowMin = nMinQntyTolerance !== undefined && nDeviation < nMinQntyTolerance;
-
-            let sMessage = '';
-            const itemsText = items ? ` (Items: ${items.join(', ')})` : '';
-
-            if (isAboveMax) {
-                sMessage = paymentDoc
-                    ? `La diferencia de ${nDeviation.toFixed(2)} supera la desviación máxima ${nMaxQntyTolerance}\n` +
-                    `Pago: ${paymentDoc}${itemsText}\n` +
-                    `Total OC (sin impuestos): ${totalAmmount?.toFixed(2) || 'N/A'}\n` +
-                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
-                    `Recibido en complemento: ${received?.toFixed(2)}`
-                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} supera la desviación máxima ${nMaxQntyTolerance}`;
-            } else if (isBelowMin) {
-                sMessage = paymentDoc
-                    ? `La diferencia de ${nDeviation.toFixed(2)} está por debajo de la desviación mínima ${nMinQntyTolerance}\n` +
-                    `Pago: ${paymentDoc}${itemsText}\n` +
-                    `Total OC (sin impuestos): ${totalAmmount?.toFixed(2) || 'N/A'}\n` +
-                    `Esperado (con impuestos): ${expected?.toFixed(2)}\n` +
-                    `Recibido en complemento: ${received?.toFixed(2)}`
-                    : `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está por debajo de la desviación mínima ${nMinQntyTolerance}`;
-            } else {
-                sMessage = `La diferencia ${nDeviation?.toFixed(2) || nDeviation} está fuera del rango aceptable`;
-            }
-
-            return new Promise((resolve) => {
-                const oDialog = new Dialog({
-                    type: "Message",
-                    title: isAboveMax ? "Desviación Máxima" : "Desviación Mínima",
-                    content: new Text({ text: sMessage }),
-                    beginButton: new Button({
-                        type: "Emphasized",
-                        text: "Enviar con desviación",
-                        press: function () {
-                            resolve("Enviar");
-                            oDialog.close();
-                        }.bind(this)
-                    }),
-                    endButton: new Button({
-                        text: "Cargar otro complemento",
-                        press: function () {
-                            resolve("Cancelar");
-                            oDialog.close();
-                        }.bind(this)
-                    }),
-                    afterClose: function () {
-                        oDialog.destroy();
-                    }
-                });
-                oDialog.open();
-            });
-        },
-
         _showUploadFileDialog(aSelected) {
             const oController = this;
             let aFiles;
@@ -540,6 +353,7 @@ sap.ui.define([
         },
 
         _mostrarResumenCFDI: function (datosCFDI, pdfFile, xmlFile) {
+            const oController = this;
             const oDialog = new sap.m.Dialog({
                 title: "Resumen CFDI",
                 content: [
@@ -574,7 +388,10 @@ sap.ui.define([
                                                 icon: "sap-icon://upload",
                                                 tooltip: "Subir a Base de Datos",
                                                 type: "Emphasized",
-                                                press: () => this._subirAFI(datosCFDI, pdfFile, xmlFile)
+                                                press: async () => {
+                                                    await oController._subirAFI(datosCFDI, pdfFile, xmlFile);
+                                                    oDialog.close();
+                                                }
                                             }).addStyleClass("sapUiSmallMarginEnd"),
                                             new sap.m.Button({
                                                 icon: "sap-icon://delete",
@@ -630,41 +447,43 @@ sap.ui.define([
         },
 
         _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
-            const oTable = this.getView().byId("complPagoTbl");
-            const aSelected = oTable.getSelectedItems();
-
-            // === Validar tolerancia (tolerancia 0: exige monto exacto) ===
-            const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
-
-            if (aDeviations.length > 0) {
-                const dev = aDeviations[0];
-                MessageBox.error(
-                    `La diferencia de ${dev.deviation.toFixed(2)} no está permitida.\n` +
-                    `El monto debe coincidir exactamente con el esperado (${dev.expected.toFixed(2)}).\n` +
-                    `Monto recibido en el complemento: ${dev.received.toFixed(2)}.`
-                );
-                return; // Bloquea el proceso de subida
-            }
 
             BusyIndicator.show(100);
             try {
+                const oTable = this.getView().byId("complPagoTbl");
+                const aSelected = oTable.getSelectedItems();
                 const oElement = aSelected[0];
                 const oContext = oElement.getBindingContext("PCModel");
                 const oData = oContext.getObject();
+
                 const payload = {
                     data: {
                         "DocumentNumber": oData.PaymentDocument,
                         "Exercise": oData.FiscalYear,
                         "Society": oData.CompanyCode,
-                        "BuyDocument": oData.BuyDocument,
-                        "PositionNumber": oData.PositionNumber,
-                        "MaterialDocument": oData.MaterialDocument,
-                        "MaterialDocumentPos": oData.MaterialDocumentPos,
-                        "MaterialNumber": oData.MaterialNumber,
-                        "Ammount": oData.Ammount,
-                        "UUID": datosCFDI.UUID
+                        "Status": oData.Status,
+                        "Uuid": datosCFDI.UUID || "",
+                        "Folio": datosCFDI.FOLIO || "",
+                        "Serie": datosCFDI.SERIE || "",
+                        "Supplier": oData.Supplier,
+                        "Rfc": datosCFDI.RFC || "",
+                        "PaymentDate": oData.PaymentDate?.split('T')[0] || "",
+                        "Currency": datosCFDI.CURRENCY || "MXN",
+                        "Total": String(datosCFDI.TOTAL || 0),
+                        "Iva": String(datosCFDI.TOTAL_IMPUESTOSTRAS || 0),
+                        "FormOfPayment": datosCFDI.FORM_OF_PAYMENT || "",
+                        "RfcOrd": datosCFDI.RFC_EMISOR_CTA_ORD || "",
+                        "Bank": datosCFDI.NOM_BANCO_ORD_EXT || "",
+                        "OrdAccount": datosCFDI.CTA_ORDENANTE || "",
+                        "RfcBen": datosCFDI.RFC_EMISOR_CTA_BEN || "",
+                        "PaymentOperationNumber": datosCFDI.NUM_OPERACION || "",
+                        "XmlName": xmlFile ? xmlFile.name : "",
+                        "PdfName": pdfFile ? pdfFile.name : "",
                     }
                 };
+
+                console.log("[Payload]", payload);
+
                 const res = await fetch("/odata/v4/cfdipayment/Upload", {
                     method: "POST",
                     headers: {
@@ -674,12 +493,14 @@ sap.ui.define([
                     body: JSON.stringify(payload),
                     credentials: "include"
                 });
+
                 if (!res.ok) {
                     const errText = await res.text();
                     MessageBox.error("Error al subir a Complemento de Pago:\n" + errText);
                     BusyIndicator.hide();
                     return;
                 }
+
                 const data = await res.json();
                 console.log("[_subirAFI] Respuesta Upload:", data);
 
@@ -776,6 +597,7 @@ sap.ui.define([
 
                 this._showResultDialog(aResults);
                 BusyIndicator.hide();
+
             } catch (err) {
                 console.error("[_subirAFI] Error:", err);
                 MessageBox.error("Error al cargar complemento: " + (err.message || "Error desconocido"));
