@@ -1,118 +1,129 @@
 _schema-version: "3.2"
-ID: Facturasenrevision
+ID: FacturasEnRevision
 version: 0.0.1
 modules:
-- name: facturasenrevision-approuter
-  type: approuter.nodejs
-  path: facturasenrevision-approuter
-   #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  - name: Facturasenrevision_html_repo_runtime
-  - name: uaa_Facturasenrevision
-  - name: Facturasenrevision_saas_registry # Manual
-  - name: Facturasenrevision-destination-service
-    group: destinations
+  - name: facturasenrevision-approuter
+    type: approuter.nodejs
+    path: facturasenrevision-approuter
+    #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-     #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-    - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: Facturasenrevision_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: Facturasenrevision_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - facturasenrevisionfront.zip
-      name: facturasenrevisionfront
-      target-path: resources/
-- name: facturasenrevisionfront
-  type: html5
-  path: facturasenrevision_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #- name: FacturasEnRevision_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_FacturasEnRevision
+      - name: FacturasEnRevision_saas_registry # Manual
+      #- name: FacturasEnRevision-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory:
+        256M
+        #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: FacturasEnRevision_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: FacturasEnRevision_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - facturasenrevisionfront.zip
+          name: facturasenrevisionfront
+          target-path: resources/
+  - name: facturasenrevisionfront
+    type: html5
+    path: facturasenrevision_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-- name: Facturasenrevision_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
-- name: uaa_Facturasenrevision
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: Facturasenrevision-xsuaa-service
-    service-plan: application
-- name: Facturasenrevision_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
-             #-------------------Manual-----------------------------------------------------------------
-- name: Facturasenrevision_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: ${appname}-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicacion Facturas en Revision
-      displayName: Facturas en Revision
-      
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
-#-----------------------------------------------------------------------------------------
-- name: Facturasenrevision-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Facturasenrevision-destination-service
-    service-plan: lite
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
+  #- name: FacturasEnRevision_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
+  - name: uaa_FacturasEnRevision
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: FacturasEnRevision-xsuaa-service
+      service-plan: application
+  - name: FacturasEnRevision_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan:
+        app-host
+        #-------------------Manual-----------------------------------------------------------------
+  - name: FacturasEnRevision_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: ${appname}-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicacion Facturas en Revision
+        displayName: Facturas en Revision
+
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+  #-----------------------------------------------------------------------------------------
+  #- name: FacturasEnRevision-destination-service
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    config:
+  #      HTML5Runtime_enabled: false
+  #      init_data:
+  #        instance:
+  #          destinations:
+  #            - Authentication: NoAuthentication
+  #              Name: ui5
+  #              ProxyType: Internet
+  #              Type: HTTP
+  #              URL: https://ui5.sap.com
+  #          existing_destinations_policy: update
+  #      version: 1.0.0
+  #    service: destination
+  #    service-name: FacturasEnRevision-destination-service
+  #    service-plan: lite
+
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
+
 parameters:
   appname: facturasenrevision #------Manual
   deploy_mode: html5-repo
