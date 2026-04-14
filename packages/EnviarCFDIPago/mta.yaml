@@ -1,118 +1,127 @@
 _schema-version: "3.2"
-ID: Enviarcfdipago
+ID: EnviarCfdiPago
 version: 0.0.1
 modules:
-- name: enviarcfdipago-approuter
-  type: approuter.nodejs
-  path: enviarcfdipago-approuter
-   #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  - name: Enviarcfdipago_html_repo_runtime
-  - name: uaa_Enviarcfdipago
-  - name: Enviarcfdipago_saas_registry # Manual
-  - name: Enviarcfdipago-destination-service
-    group: destinations
+  - name: enviarcfdipago-approuter
+    type: approuter.nodejs
+    path:
+      enviarcfdipago-approuter
+      #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-     #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-    - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: Enviarcfdipago_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: Enviarcfdipago_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+      #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - enviarcfdipagofront.zip
-      name: enviarcfdipagofront
-      target-path: resources/
-- name: enviarcfdipagofront
-  type: html5
-  path: enviarcfdipago_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #- name: EnviarCfdiPago_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EnviarCfdiPago
+      - name: EnviarCfdiPago_saas_registry # Manual
+      #- name: EnviarCfdiPago-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory:
+        256M
+        #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: EnviarCfdiPago_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: EnviarCfdiPago_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - enviarcfdipagofront.zip
+          name: enviarcfdipagofront
+          target-path: resources/
+  - name: enviarcfdipagofront
+    type: html5
+    path: enviarcfdipago_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-- name: Enviarcfdipago_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
-- name: uaa_Enviarcfdipago
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: Enviarcfdipago-xsuaa-service
-    service-plan: application
-- name: Enviarcfdipago_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
-    #-------------------Manual-----------------------------------------------------------------
-- name: Enviarcfdipago_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: ${appname}-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicacion enviar cfdi pago
-      displayName: Enviar cfdi pago
-      
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
-#-----------------------------------------------------------------------------------------
-- name: Enviarcfdipago-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Enviarcfdipago-destination-service
-    service-plan: lite
+  #- name: EnviarCfdiPago_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
+  - name: uaa_EnviarCfdiPago
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: EnviarCfdiPago-xsuaa-service
+      service-plan: application
+  - name: EnviarCfdiPago_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+      #-------------------Manual-----------------------------------------------------------------
+  - name: EnviarCfdiPago_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: ${appname}-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicacion enviar cfdi pago
+        displayName: Enviar cfdi pago
+
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+  #-----------------------------------------------------------------------------------------
+  #- name: EnviarCfdiPago-destination-service
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    config:
+  #      HTML5Runtime_enabled: false
+  #      init_data:
+  #        instance:
+  #          destinations:
+  #            - Authentication: NoAuthentication
+  #              Name: ui5
+  #              ProxyType: Internet
+  #              Type: HTTP
+  #              URL: https://ui5.sap.com
+  #          existing_destinations_policy: update
+  #      version: 1.0.0
+  #    service: destination
+  #    service-name: EnviarCfdiPago-destination-service
+  #    service-plan: lite
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 parameters:
   appname: enviarcfdipago #------Manual
   deploy_mode: html5-repo

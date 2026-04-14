@@ -1,0 +1,43 @@
+_schema-version: "3.2"
+ID: EnviarCfdiPagoTest-extension
+extends: EnviarCfdiPago
+
+parameters:
+  appname: enviarcfdipago-test
+  subdomain: ${org}
+
+modules:
+  - name: enviarcfdipago-approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+
+resources:
+  - name: uaa_EnviarCfdiPago
+    parameters:
+      service-name: ${appname}-xsuaa
+      config:
+        xsappname: ${appname}
+
+  - name: EnviarCfdiPago_saas_registry
+    parameters:
+      service-name: ${appname}-saas-registry
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        displayName: Enviar Cfdi Pago Test
+        description: Aplicacion Enviar Cfdi Pago - Ambiente Test
+
+  - name: AppsPortalFront-destination-service
+    parameters:
+      service-name: AppsPortalFront-test-destination
+
+  - name: EnviarCfdiPago_html_repo_host
+    parameters:
+      service-name: EnviarCfdiPago-Test-html5-host
+
+  - name: AppsPortalFront_html_repo_runtime
+    parameters:
+      service-name: AppsPortalFront-test-html5-runtime
