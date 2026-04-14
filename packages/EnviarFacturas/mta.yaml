@@ -1,118 +1,126 @@
 _schema-version: "3.2"
-ID: Enviarfacturas
+ID: EnviarFacturas
 version: 0.0.1
 modules:
-- name: enviarfacturas-approuter
-  type: approuter.nodejs
-  path: enviarfacturas-approuter
-  #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  - name: Enviarfacturas_html_repo_runtime
-  - name: uaa_Enviarfacturas
-  - name: Enviarfacturas_saas_registry # Manual
-  - name: Enviarfacturas-destination-service
-    group: destinations
+  - name: enviarfacturas-approuter
+    type: approuter.nodejs
+    path: enviarfacturas-approuter
+    #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-    #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-    - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: Enviarfacturas_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: Enviarfacturas_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - enviarfacturasfront.zip
-      name: enviarfacturasfront
-      target-path: resources/
-- name: enviarfacturasfront
-  type: html5
-  path: enviarfacturas_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #- name: EnviarFacturas_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EnviarFacturas
+      - name: EnviarFacturas_saas_registry # Manual
+      #- name: EnviarFacturas-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+      #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: EnviarFacturas_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: EnviarFacturas_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - enviarfacturasfront.zip
+          name: enviarfacturasfront
+          target-path: resources/
+  - name: enviarfacturasfront
+    type: html5
+    path: enviarfacturas_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-- name: Enviarfacturas_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
-- name: uaa_Enviarfacturas
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: Enviarfacturas-xsuaa-service
-    service-plan: application
-- name: Enviarfacturas_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
-     #-------------------Manual-----------------------------------------------------------------
-- name: Enviarfacturas_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: ${appname}-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicacion enviar facturas
-      displayName: Enviar Facturas
-      
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
-#-----------------------------------------------------------------------------------------
-- name: Enviarfacturas-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Enviarfacturas-destination-service
-    service-plan: lite
+  #- name: EnviarFacturas_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
+  - name: uaa_EnviarFacturas
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: EnviarFacturas-xsuaa-service
+      service-plan: application
+  - name: EnviarFacturas_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan:
+        app-host
+        #-------------------Manual-----------------------------------------------------------------
+  - name: EnviarFacturas_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: ${appname}-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicacion enviar facturas
+        displayName: Enviar Facturas
+
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+  #-----------------------------------------------------------------------------------------
+  #- name: EnviarFacturas-destination-service
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    config:
+  #      HTML5Runtime_enabled: false
+  #      init_data:
+  #        instance:
+  #          destinations:
+  #            - Authentication: NoAuthentication
+  #              Name: ui5
+  #              ProxyType: Internet
+  #              Type: HTTP
+  #              URL: https://ui5.sap.com
+  #          existing_destinations_policy: update
+  #      version: 1.0.0
+  #    service: destination
+  #    service-name: EnviarFacturas-destination-service
+  #    service-plan: lite
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 parameters:
   appname: enviarfacturas #------Manual
   deploy_mode: html5-repo
