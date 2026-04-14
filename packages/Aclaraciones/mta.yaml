@@ -24,10 +24,10 @@ modules:
           name: ui5
           url: https://ui5.sap.com
     parameters:
+      keep-existing-routes: true
       disk-quota: 256M
-      memory:
-        256M
-        #-------------Manual--------------------------------------
+      memory: 256M
+      #-------------Manual--------------------------------------
       #host: ${appname}
       #domain: ${default-domain}
       routes:
