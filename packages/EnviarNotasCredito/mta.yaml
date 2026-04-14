@@ -1,118 +1,127 @@
 _schema-version: "3.2"
-ID: Enviarnotacredito
+ID: EnviarNotaCredito
 version: 0.0.1
 modules:
-- name: enviarnotacredito-approuter
-  type: approuter.nodejs
-  path: enviarnotacredito-approuter
-  #------------------Manual------------------------------------------------------------------
-  properties:
-    TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-    SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  - name: Enviarnotacredito_html_repo_runtime
-  - name: uaa_Enviarnotacredito
-  - name: Enviarnotacredito_saas_registry # Manual
-  - name: Enviarnotacredito-destination-service
-    group: destinations
+  - name: enviarnotacredito-approuter
+    type: approuter.nodejs
+    path: enviarnotacredito-approuter
+    #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-     #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-    - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: Enviarnotacredito_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: Enviarnotacredito_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - enviarnotafront.zip
-      name: enviarnotafront
-      target-path: resources/
-- name: enviarnotafront
-  type: html5
-  path: enviarnota_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #- name: EnviarNotaCredito_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EnviarNotaCredito
+      - name: EnviarNotaCredito_saas_registry # Manual
+      #- name: EnviarNotaCredito-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory:
+        256M
+        #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: EnviarNotaCredito_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: EnviarNotaCredito_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - enviarnotafront.zip
+          name: enviarnotafront
+          target-path: resources/
+  - name: enviarnotafront
+    type: html5
+    path: enviarnota_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-- name: Enviarnotacredito_html_repo_runtime
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-runtime
-- name: uaa_Enviarnotacredito
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: Enviarnotacredito-xsuaa-service
-    service-plan: application
-- name: Enviarnotacredito_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-plan: app-host
+  #- name: EnviarNotaCredito_html_repo_runtime
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    service: html5-apps-repo
+  #    service-plan: app-runtime
+  - name: AppsPortalFront_html_repo_runtime
+    type: org.cloudfoundry.existing-service
+  - name: uaa_EnviarNotaCredito
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: EnviarNotaCredito-xsuaa-service
+      service-plan: application
+  - name: EnviarNotaCredito_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan:
+        app-host
         #-------------------Manual-----------------------------------------------------------------
-- name: Enviarnotacredito_saas_registry
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: saas-registry
-    service-name: ${appname}-saas-registry
-    service-plan: application
-    config:
-      xsappname: ${appname}
-      appName: ${appname}
-      appUrls:
-        getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
-        onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
-      category: Invoice Link
-      description: Aplicacion enviar nota de credito
-      displayName: Enviar nota de credito
-      
-      appPlans:
-        - name: trial
-          description: Sustainable SaaS trial plan
-        - name: default
-          description: Sustainable SaaS default plan
-#-----------------------------------------------------------------------------------------
-- name: Enviarnotacredito-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: false
-      init_data:
-        instance:
-          destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: Enviarnotacredito-destination-service
-    service-plan: lite
+  - name: EnviarNotaCredito_saas_registry
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: saas-registry
+      service-name: ${appname}-saas-registry
+      service-plan: application
+      config:
+        xsappname: ${appname}
+        appName: ${appname}
+        appUrls:
+          getDependencies: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/dependencies
+          onSubscription: https://${subdomain}-${appname}.${default-domain}/callback/v1.0/tenants/{tenantId}
+        category: Invoice Link
+        description: Aplicacion enviar nota de credito
+        displayName: Enviar nota de credito
+
+        appPlans:
+          - name: trial
+            description: Sustainable SaaS trial plan
+          - name: default
+            description: Sustainable SaaS default plan
+  #-----------------------------------------------------------------------------------------
+  #- name: EnviarNotaCredito-destination-service
+  #  type: org.cloudfoundry.managed-service
+  #  parameters:
+  #    config:
+  #      HTML5Runtime_enabled: false
+  #      init_data:
+  #        instance:
+  #          destinations:
+  #            - Authentication: NoAuthentication
+  #              Name: ui5
+  #              ProxyType: Internet
+  #              Type: HTTP
+  #              URL: https://ui5.sap.com
+  #          existing_destinations_policy: update
+  #      version: 1.0.0
+  #    service: destination
+  #    service-name: EnviarNotaCredito-destination-service
+  #    service-plan: lite
+  - name: AppsPortalFront-destination-service
+    type: org.cloudfoundry.existing-service
 parameters:
   appname: enviarnotacredito #------Manual
   deploy_mode: html5-repo
