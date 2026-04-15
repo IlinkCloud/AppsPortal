@@ -2,64 +2,64 @@ _schema-version: "3.2"
 ID: EstadoCuenta
 version: 0.0.1
 modules:
-- name: estadocuenta-approuter
-  type: approuter.nodejs
-  path: estadocuenta-approuter
-  #------------------Manual------------------------------------------------------------------
-  properties:
-      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
-      CJ_PROTECT_WHITELIST: [{"host":"*.cfapps.us10.hana.ondemand.com"}]
-      SEND_XFRAMEOPTIONS: false
-  #------------------------------------------------------------------------------------------
-  requires:
-  #  - name: estadocuenta_html_repo_runtime
-  - name: frontend-html-repo-runtime
-  - name: uaa_EstadoCuenta
-  - name: EstadoCuenta_saas_registry # Manual
-  #  - name: EstadoCuenta-destination-service
-  - name: frontend-destination
-    group: destinations
+  - name: estadocuenta-approuter
+    type: approuter.nodejs
+    path: estadocuenta-approuter
+    #------------------Manual------------------------------------------------------------------
     properties:
-      forwardAuthToken: false
-      name: ui5
-      url: https://ui5.sap.com
-  parameters:
-    keep-existing-routes: true
-    disk-quota: 256M
-    memory: 256M
-    #-------------Manual--------------------------------------
-    #host: ${appname}
-    #domain: ${default-domain}
-    routes:
-      - route: https://${subdomain}-${appname}.${default-domain}
-    #----------------------------------------------------------
-- name: EstadoCuenta_ui_deployer
-  type: com.sap.application.content
-  path: .
-  requires:
-  #- name: frontend-html-repo-host
-  - name: EstadoCuenta_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+      TENANT_HOST_PATTERN: ^(.*)-${appname}.${default-domain}
+      CJ_PROTECT_WHITELIST: [{ "host": "*.cfapps.us10.hana.ondemand.com" }]
+      SEND_XFRAMEOPTIONS: false
+    #------------------------------------------------------------------------------------------
     requires:
-    - artifacts:
-      - estadodecuentafront.zip
-      name: estadodecuentafront
-      target-path: resources/
-- name: estadodecuentafront
-  type: html5
-  path: estadodecuenta_front
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
+      #  - name: estadocuenta_html_repo_runtime
+      - name: AppsPortalFront_html_repo_runtime
+      - name: uaa_EstadoCuenta
+      - name: EstadoCuenta_saas_registry # Manual
+      #  - name: EstadoCuenta-destination-service
+      - name: AppsPortalFront-destination-service
+        group: destinations
+        properties:
+          forwardAuthToken: false
+          name: ui5
+          url: https://ui5.sap.com
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+      #-------------Manual--------------------------------------
+      #host: ${appname}
+      #domain: ${default-domain}
+      routes:
+        - route: https://${subdomain}-${appname}.${default-domain}
+      #----------------------------------------------------------
+  - name: EstadoCuenta_ui_deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      #- name: frontend-html-repo-host
+      - name: EstadoCuenta_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - estadodecuentafront.zip
+          name: estadodecuentafront
+          target-path: resources/
+  - name: estadodecuentafront
+    type: html5
+    path: estadodecuenta_front
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms: []
 resources:
-  - name: frontend-html-repo-runtime
+  - name: AppsPortalFront_html_repo_runtime
     type: org.cloudfoundry.existing-service
 
   #- name: EstadoCuenta_html_repo_runtime
@@ -75,7 +75,7 @@ resources:
       service: xsuaa
       service-name: EstadoCuenta-xsuaa-service
       service-plan: application
-    
+
   #- name: frontend-html-repo-host
   #  type: org.cloudfoundry.existing-service
 
@@ -84,7 +84,7 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-host
-#-------------------Manual-----------------------------------------------------------------
+  #-------------------Manual-----------------------------------------------------------------
   - name: EstadoCuenta_saas_registry
     type: org.cloudfoundry.managed-service
     parameters:
@@ -124,11 +124,10 @@ resources:
   #    service: destination
   #    service-name: EstadoCuenta-destination-service
   #    service-plan: lite
-  - name: frontend-destination
+  - name: AppsPortalFront-destination-service
     type: org.cloudfoundry.existing-service
 parameters:
   appname: estadocuenta #------Manual
   deploy_mode: html5-repo
   enable-parallel-deployments: true
   subdomain: ${org} #------Manual
-
