@@ -349,16 +349,7 @@ sap.ui.define([
                                         };
 
                                         try {
-                                            const validacionPAC = await oController.getValidacionPAC();
-                                            let urlValidacion;
-                                            if (validacionPAC) {
-                                                urlValidacion = "/odata/v4/credit-notes-reception/ValidarFacturaReglasPac";
-                                                console.log("[Validación] Usando ValidarFacturaReglasPac (validación PAC activada)");
-                                            } else {
-                                                urlValidacion = "/odata/v4/credit-notes-reception/ValidarFactura";
-                                                console.log("[Validación] Usando ValidarFactura (validación PAC desactivada)");
-                                            }
-
+                                            const urlValidacion = "/odata/v4/goods-receipts/ValidarFactura";
                                             const res = await fetch(urlValidacion, {
                                                 method: "POST",
                                                 headers: {
@@ -469,43 +460,6 @@ sap.ui.define([
                 }
             });
             oDialog.open();
-        },
-
-        getValidacionPAC: function () {
-            return new Promise((resolve) => {
-                const url = "/odata/v4/testing-mode/Test";
-                fetch(url, {
-                    method: "GET",
-                    headers: { "Accept": "application/json" },
-                    credentials: "include"
-                })
-                    .then(res => {
-                        if (!res.ok) throw new Error("Error al obtener parámetros");
-                        return res.json();
-                    })
-                    .then(data => {
-                        const results = data.value || [];
-                        if (results.length > 0) {
-                            const param = results[0];
-                            try {
-                                const parsed = JSON.parse(param.ParamValue);
-                                const validacionPAC = parsed.ValidacionPAC || false;
-                                console.log("[getValidacionPAC] Valor:", validacionPAC);
-                                resolve(validacionPAC);
-                            } catch (err) {
-                                console.error("[getValidacionPAC] Error parseando ParamValue:", err);
-                                resolve(false);
-                            }
-                        } else {
-                            console.log("[getValidacionPAC] No se encontraron parámetros, usando valor por defecto: false");
-                            resolve(false);
-                        }
-                    })
-                    .catch(err => {
-                        console.error("[getValidacionPAC] Error:", err);
-                        resolve(false);
-                    });
-            });
         },
 
         _mostrarResumenCFDI: function (datosCFDI, pdfFile, xmlFile) {
