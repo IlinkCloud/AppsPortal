@@ -68,17 +68,30 @@ sap.ui.define([
           const hoy = new Date();
           const fechaHoy = hoy.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-          let saldo = 0;
+          // Objeto para agrupar saldos por moneda: { "MXN": 300, "USD": 4241.50 }
+          let saldos = {};
+
           (data.value || []).forEach(f => {
             if (!f.IsCleared) {
-              saldo += parseFloat(f.AmountInTransactionCurrency || 0);
+              // Para pendientes, usamos SupplierInvoiceItemAmount
+              const monto = parseFloat(f.SupplierInvoiceItemAmount || 0);
+              const moneda = f.DocumentCurrency || "MXN";
+
+              if (!isNaN(monto)) {
+                saldos[moneda] = (saldos[moneda] || 0) + monto;
+              }
             }
           });
 
+          // Formatear el texto final
+          const saldoTexto = Object.entries(saldos)
+            .map(([mon, val]) => `${val.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${mon}`)
+            .join(" | ");
+
           this.oTotalesModel.setData({
             fechaHoy,
-            saldo,
-            moneda: (data.value && data.value[0]?.DocumentCurrency) || "MXN"
+            saldo: saldoTexto,
+            moneda: ""
           });
 
           const oTable = this.byId("cuentasTable");
@@ -143,7 +156,7 @@ sap.ui.define([
         case 0: // Pendientes
           aFilters.push(new Filter("IsCleared", FilterOperator.EQ, false));
           oBinding.filter(aFilters);
-          oDateRange.setVisible(false); // ocultar calendario
+          oDateRange.setVisible(false);
           break;
         case 1: // Pagadas
           aFilters.push(new Filter("IsCleared", FilterOperator.EQ, true));
@@ -249,39 +262,42 @@ sap.ui.define([
         return;
       }
 
-      // Consultar UUID desde la CDS usando AccountingDocument
+      //en back Consultar UUID usando AccountingDocument del PAGO (no SupplierInvoice)
       let uuidValue = "";
       let detalle = [];
       try {
+        //en back Entidad en MAYÚSCULAS: YY1_UUID
         const response = await fetch(
-          "/sap/opu/odata/sap/YY1_UUID_CDS/YY1_UUID?$filter=AccountingDocument eq '" + oData.SupplierInvoice + "'",
+          "/sap/opu/odata/sap/YY1_UUID_CDS/YY1_UUID?$format=json&$filter=AccountingDocument eq '" +
+          (oData.ClearingAccountingDocument || oData.AccountingDocument) +
+          "' and FiscalYear eq '" + (new Date().getFullYear()) + "'",
           {
             method: "GET",
             headers: { "Accept": "application/json" },
             credentials: "include"
           }
         );
-
         if (response.ok) {
           const result = await response.json();
-          uuidValue = result?.d?.results?.[0]?.JrnlEntryCntrySpecificRef1 || "";
-        } else {
-          console.warn("UUID no encontrado para documento:", oData.AccountingDocument);
-          uuidValue = "";
+          // Filtrar solo UUIDs no vacíos
+          const uuids = result?.d?.results?.filter(u => u.JrnlEntryCntrySpecificRef1?.trim()) || [];
+          uuidValue = uuids[0]?.JrnlEntryCntrySpecificRef1 ||
+            oData.UUID ||  // Fallback al UUID que ya viene del backend
+            "";
         }
       } catch (err) {
         console.error("Error consultando UUID:", err);
-        uuidValue = "";
+        uuidValue = oData.UUID || ""; // Fallback
       }
 
       // Construir datos para la tabla del diálogo
       detalle = [{
         SupplierInvoice: oData.SupplierInvoice,
         UUID: uuidValue,
-        Reference: oData.DocumentReferenceID,
-        FechaFactura: oData.ClearingCreationDate,
-        Importe: oData.AmountInTransactionCurrency,
-        Moneda: oData.TransactionCurrency
+        Reference: oData.DocumentReferenceID || oData.AssignmentReference,
+        FechaFactura: oData.ClearingCreationDate || oData.DocumentDate,
+        Importe: oData.AmountInTransactionCurrency || oData.NetPaymentAmount,
+        Moneda: oData.TransactionCurrency || oData.DocumentCurrency
       }];
 
       const oModel = new sap.ui.model.json.JSONModel({ detalle });
@@ -329,6 +345,22 @@ sap.ui.define([
 
       this.oFacturaDialog.setModel(oModel, "detalle");
       this.oFacturaDialog.open();
+    },
+
+    formatDate: function (sDate) {
+      if (!sDate) return "";
+      // Si ya viene como string ISO (YYYY-MM-DD), retornar tal cual
+      if (typeof sDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sDate)) {
+        return sDate;
+      }
+      // Si viene como /Date(1234567890)/, parsear
+      const match = /\/Date\((\d+)\)\//.exec(sDate);
+      if (match) {
+        return new Date(parseInt(match[1], 10)).toISOString().split("T")[0];
+      }
+      // Fallback
+      const d = new Date(sDate);
+      return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
     }
 
   });

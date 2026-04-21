@@ -108,19 +108,18 @@
                                         vAlign="Middle"
                                         textAlign="Left"
                                     />
-                                    <ObjectNumber
-                                        xmlns:sap.ui.layout="sap.ui.layout"
+                                    <Text
                                         xmlns:html="http://www.w3.org/1999/xhtml"
+                                        xmlns:sap.ui.layout="sap.ui.layout"
                                         xmlns:mvc="sap.ui.core.mvc"
                                         xmlns:unified="sap.ui.unified"
                                         xmlns:core="sap.ui.core"
                                         xmlns:layout="sap.ui.commons.layout"
                                         xmlns="sap.m"
-                                        number="{parts: [{path: 'totales>/saldo'}, {path: 'totales>/moneda'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                        unit="MXN"
-                                        emphasized="true"
-                                        state="Error"
+                                        text="{totales>/saldo}"
+                                        textAlign="Right"
                                         id="tTotxCob"
+                                        class="sapMObjectNumberValue saldoRojo"
                                     />
                                 </cells>
                             </ColumnListItem>
@@ -311,6 +310,18 @@
                             text="Tipo de Documento"
                         />
                     </Column>
+
+                    <Column
+                        id="_IDGenColumnUUID"
+                        demandPopin="true"
+                        minScreenWidth="Tablet"
+                    >
+                        <Text
+                            id="_IDGenTextUUID"
+                            text="UUID"
+                        />
+                    </Column>
+
                     <Column
                         id="_IDGenColumn5"
                         demandPopin="true"
@@ -370,7 +381,6 @@
                                 text="{path: 'facturas>IsCleared', formatter: '.formatStatus'}"
                                 state="{path: 'facturas>IsCleared', formatter: '.formatStatusState'}"
                             />
-
                             <Text
                                 id="_IDGenText13"
                                 text="{facturas>SupplierName}"
@@ -386,21 +396,21 @@
                             />
                             <Text
                                 id="_IDGenText16"
-                                text="{
-    parts: [
-      {path: 'facturas>IsCleared'},
-      {path: 'facturas>AccountingDocumentType'}
-    ],
-    formatter: '.formatTipoDocumentoPorEstatus'
-  }"
+                                text="{parts: [{path: 'facturas>IsCleared'}, {path: 'facturas>AccountingDocumentType'}], formatter: '.formatTipoDocumentoPorEstatus'}"
+                            />
+                            <Text
+                                id="_IDGenTextUUIDCell"
+                                text="{facturas>UUID}"
+                                wrapping="false"
+                                tooltip="{facturas>UUID}"
                             />
                             <Text
                                 id="_IDGenText17"
-                                text="{facturas>DocumentDate}"
+                                text="{path: 'facturas>DocumentDate', formatter: '.formatDate'}"
                             />
                             <Text
                                 id="_IDGenText18"
-                                text="{facturas>ClearingCreationDate}"
+                                text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDate'}"
                             />
                             <Text
                                 id="_IDGenText19"
@@ -408,12 +418,13 @@
                             />
                             <Text
                                 id="_IDGenText20"
-                                text="{facturas>ClearingDate}"
+                                text="{path: 'facturas>ClearingDate', formatter: '.formatDate'}"
                             />
                             <ObjectNumber
                                 id="_IDGenObjectNumber"
-                                number="{facturas>AmountInTransactionCurrency}"
+                                number="{= ${facturas>AmountInTransactionCurrency} || ${facturas>SupplierInvoiceItemAmount} || 0 }"
                                 unit="{facturas>TransactionCurrency}"
+                                emphasized="true"
                             />
                         </cells>
                     </ColumnListItem>

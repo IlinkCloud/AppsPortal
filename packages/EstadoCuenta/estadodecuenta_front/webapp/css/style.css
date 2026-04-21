@@ -1,1 +1,5 @@
-/* Enter your custom styles here */
+.saldoRojo {
+    color: #b00 !important;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
