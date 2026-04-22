@@ -396,7 +396,14 @@
                             />
                             <Text
                                 id="_IDGenText16"
-                                text="{parts: [{path: 'facturas>IsCleared'}, {path: 'facturas>AccountingDocumentType'}], formatter: '.formatTipoDocumentoPorEstatus'}"
+                                text="{
+        parts: [
+            {path: 'facturas>IsCleared'},
+            {path: 'facturas>AccountingDocumentType'},
+            {path: 'facturas>DocumentType'}
+        ],
+        formatter: '.formatTipoDocumentoPorEstatus'
+    }"
                             />
                             <Text
                                 id="_IDGenTextUUIDCell"
@@ -406,11 +413,11 @@
                             />
                             <Text
                                 id="_IDGenText17"
-                                text="{path: 'facturas>DocumentDate', formatter: '.formatDate'}"
+                                text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"
                             />
                             <Text
                                 id="_IDGenText18"
-                                text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDate'}"
+                                text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"
                             />
                             <Text
                                 id="_IDGenText19"
@@ -418,7 +425,7 @@
                             />
                             <Text
                                 id="_IDGenText20"
-                                text="{path: 'facturas>ClearingDate', formatter: '.formatDate'}"
+                                text="{path: 'facturas>ClearingDate', formatter: '.formatDateSimple'}"
                             />
                             <ObjectNumber
                                 id="_IDGenObjectNumber"

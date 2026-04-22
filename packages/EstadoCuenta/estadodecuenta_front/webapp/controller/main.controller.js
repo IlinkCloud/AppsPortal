@@ -4,18 +4,12 @@ sap.ui.define([
   "sap/ui/model/Filter",
   "sap/ui/core/BusyIndicator",
   "sap/ui/model/FilterOperator",
-  "sap/ui/model/Sorter"
-], (Controller, JSONModel, Filter, BusyIndicator, FilterOperator, Sorter) => {
+  "sap/ui/model/Sorter",
+  "sap/ui/core/format/DateFormat"
+], (Controller, JSONModel, Filter, BusyIndicator, FilterOperator, Sorter, DateFormat) => {
   "use strict";
 
   const fnFormat = (d) => d.toISOString().split("T")[0];
-  const daysBackDefault = 60;
-
-  function subtractDays(date, days) {
-    const d = new Date(date);
-    d.setDate(d.getDate() - days);
-    return d;
-  }
 
   return Controller.extend("estadodecuentafront.controller.main", {
     onInit: function () {
@@ -68,15 +62,13 @@ sap.ui.define([
           const hoy = new Date();
           const fechaHoy = hoy.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-          // Objeto para agrupar saldos por moneda: { "MXN": 300, "USD": 4241.50 }
+          /// Calcular saldo pendiente (solo facturas no pagadas)
           let saldos = {};
-
           (data.value || []).forEach(f => {
             if (!f.IsCleared) {
-              // Para pendientes, usamos SupplierInvoiceItemAmount
+              // Para pendientes, usar el monto de factura (SupplierInvoiceItemAmount)
               const monto = parseFloat(f.SupplierInvoiceItemAmount || 0);
               const moneda = f.DocumentCurrency || "MXN";
-
               if (!isNaN(monto)) {
                 saldos[moneda] = (saldos[moneda] || 0) + monto;
               }
@@ -90,8 +82,8 @@ sap.ui.define([
 
           this.oTotalesModel.setData({
             fechaHoy,
-            saldo: saldoTexto,
-            moneda: ""
+            saldo: saldoTexto,  // Texto con todas las monedas
+            moneda: ""  // Ya no usamos una sola moneda
           });
 
           const oTable = this.byId("cuentasTable");
@@ -134,7 +126,12 @@ sap.ui.define([
       }
     },
 
-    formatTipoDocumentoPorEstatus: function (bCleared, tipo) {
+    formatTipoDocumentoPorEstatus: function (bCleared, tipo, documentType) {
+      // Si viene DocumentType, usarlo directamente
+      if (documentType) {
+        return documentType === 'RE' ? 'FACTURA' : 'PAGO';
+      }
+      // Fallback a lógica anterior
       if (bCleared) {
         return "PAGO";
       } else {
@@ -262,36 +259,10 @@ sap.ui.define([
         return;
       }
 
-      //en back Consultar UUID usando AccountingDocument del PAGO (no SupplierInvoice)
-      let uuidValue = "";
-      let detalle = [];
-      try {
-        //en back Entidad en MAYÚSCULAS: YY1_UUID
-        const response = await fetch(
-          "/sap/opu/odata/sap/YY1_UUID_CDS/YY1_UUID?$format=json&$filter=AccountingDocument eq '" +
-          (oData.ClearingAccountingDocument || oData.AccountingDocument) +
-          "' and FiscalYear eq '" + (new Date().getFullYear()) + "'",
-          {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            credentials: "include"
-          }
-        );
-        if (response.ok) {
-          const result = await response.json();
-          // Filtrar solo UUIDs no vacíos
-          const uuids = result?.d?.results?.filter(u => u.JrnlEntryCntrySpecificRef1?.trim()) || [];
-          uuidValue = uuids[0]?.JrnlEntryCntrySpecificRef1 ||
-            oData.UUID ||  // Fallback al UUID que ya viene del backend
-            "";
-        }
-      } catch (err) {
-        console.error("Error consultando UUID:", err);
-        uuidValue = oData.UUID || ""; // Fallback
-      }
+      const uuidValue = oData.UUID || "";
 
       // Construir datos para la tabla del diálogo
-      detalle = [{
+      const detalle = [{
         SupplierInvoice: oData.SupplierInvoice,
         UUID: uuidValue,
         Reference: oData.DocumentReferenceID || oData.AssignmentReference,
@@ -347,21 +318,29 @@ sap.ui.define([
       this.oFacturaDialog.open();
     },
 
-    formatDate: function (sDate) {
-      if (!sDate) return "";
-      // Si ya viene como string ISO (YYYY-MM-DD), retornar tal cual
-      if (typeof sDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sDate)) {
-        return sDate;
-      }
-      // Si viene como /Date(1234567890)/, parsear
-      const match = /\/Date\((\d+)\)\//.exec(sDate);
-      if (match) {
-        return new Date(parseInt(match[1], 10)).toISOString().split("T")[0];
-      }
-      // Fallback
-      const d = new Date(sDate);
-      return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
-    }
+    formatDate: function (v) {
+      if (!v) return "";
+      const date = new Date(v);
+      if (isNaN(date.getTime())) return "";
+      const oDateFormat = DateFormat.getDateInstance({ pattern: "dd-MM-yyyy" });
+      return oDateFormat.format(date);
+    },
+
+    // Nueva función para formato "8 ene 2026"
+    formatDateSimple: function (v) {
+      if (!v) return "";
+
+      // Evita el cambio de zona horaria dividiendo la fecha y creando el objeto en hora local
+      const parts = v.split("-");
+      if (parts.length !== 3) return "";
+
+      // new Date(año, mes-1, día) crea la fecha a las 00:00:00 en la zona horaria del navegador
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (isNaN(date.getTime())) return "";
+
+      const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
+      return oDateFormat.format(date);
+    },
 
   });
 });
