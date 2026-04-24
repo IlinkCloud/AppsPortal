@@ -123,7 +123,6 @@
                                     />
                                 </cells>
                             </ColumnListItem>
-
                             <columns>
                                 <Column id="column0_1551805599359" />
                                 <Column id="column1_1551805599359" />
@@ -168,7 +167,6 @@
                             text="Opciones de Selección:"
                         />
                     </HBox>
-
                     <!-- Opciones de Selección -->
                     <HBox
                         id="_IDGenHBox1"
@@ -229,7 +227,6 @@
                             placeholder="Buscar..."
                             liveChange=".onSearch"
                         />
-
                         <Select
                             id="_IDGenSelect"
                             change=".onSearchFieldChange"
@@ -262,7 +259,6 @@
                         </Select>
                     </Toolbar>
                 </headerToolbar>
-
                 <columns>
                     <Column
                         id="_IDGenColumn"
@@ -310,7 +306,6 @@
                             text="Tipo de Documento"
                         />
                     </Column>
-
                     <Column
                         id="_IDGenColumnUUID"
                         demandPopin="true"
@@ -321,7 +316,6 @@
                             text="UUID"
                         />
                     </Column>
-
                     <Column
                         id="_IDGenColumn5"
                         demandPopin="true"
@@ -372,7 +366,6 @@
                         />
                     </Column>
                 </columns>
-
                 <items>
                     <ColumnListItem id="_IDGenColumnListItem1">
                         <cells>
@@ -387,23 +380,37 @@
                             />
                             <Link
                                 id="_IDGenLink"
-                                text="{ parts: [ {path: 'facturas>IsCleared'}, {path: 'facturas>SupplierInvoice'}, {path: 'facturas>ClearingAccountingDocument'} ], formatter: '.formatNumeroSAP' }"
+                                text="{
+parts: [
+{path: 'facturas>IsCleared'},
+{path: 'facturas>SupplierInvoice'},
+{path: 'facturas>ClearingAccountingDocument'},
+{path: 'facturas>DocumentType'}
+],
+formatter: '.formatNumeroSAP'
+}"
                                 press=".onSapNumberPress"
                             />
                             <Text
                                 id="_IDGenText15"
-                                text="{facturas>ReferenceDocument}"
+                                text="{
+parts: [
+{path: 'facturas>SupplierInvoice'},
+{path: 'facturas>DocumentType'}
+],
+formatter: '.formatFacturaDisplay'
+}"
                             />
                             <Text
                                 id="_IDGenText16"
                                 text="{
-        parts: [
-            {path: 'facturas>IsCleared'},
-            {path: 'facturas>AccountingDocumentType'},
-            {path: 'facturas>DocumentType'}
-        ],
-        formatter: '.formatTipoDocumentoPorEstatus'
-    }"
+parts: [
+{path: 'facturas>IsCleared'},
+{path: 'facturas>AccountingDocumentType'},
+{path: 'facturas>DocumentType'}
+],
+formatter: '.formatTipoDocumentoPorEstatus'
+}"
                             />
                             <Text
                                 id="_IDGenTextUUIDCell"

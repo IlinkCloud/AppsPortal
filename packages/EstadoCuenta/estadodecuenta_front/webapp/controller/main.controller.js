@@ -8,9 +8,7 @@ sap.ui.define([
   "sap/ui/core/format/DateFormat"
 ], (Controller, JSONModel, Filter, BusyIndicator, FilterOperator, Sorter, DateFormat) => {
   "use strict";
-
   const fnFormat = (d) => d.toISOString().split("T")[0];
-
   return Controller.extend("estadodecuentafront.controller.main", {
     onInit: function () {
       this.oODataJSONModel = new JSONModel();
@@ -18,19 +16,16 @@ sap.ui.define([
       this.SearchVal = "";
       this.FechaIni = null;
       this.FechaFin = null;
-
       this.oTotalesModel = new JSONModel({
         fechaHoy: "",
         saldo: 0,
         moneda: "MXN"
       });
       this.getView().setModel(this.oTotalesModel, "totales");
-
       this.getView().addEventDelegate({
         onBeforeShow: () => {
           const hoy = new Date();
-          const desde = new Date(hoy.getFullYear(), 0, 1); // 1 de enero del año actual
-
+          const desde = new Date(hoy.getFullYear(), 0, 1);
           this.FechaIni = desde;
           this.FechaFin = hoy;
           this.getStatements(fnFormat(desde), fnFormat(hoy));
@@ -40,17 +35,15 @@ sap.ui.define([
 
     getStatements: function (sDateFrom, sDateTo) {
       let finalDate = sDateTo ? new Date(sDateTo) : new Date();
-
       const currentYear = finalDate.getFullYear();
-      let initDate = new Date(currentYear, 0, 1); // Mes 0 = Enero
+      let initDate = new Date(currentYear, 0, 1);
       BusyIndicator.show(100);
-
       const url = `/odata/v4/account-statement/AccountStatement?initDate=${fnFormat(initDate)}&finalDate=${fnFormat(finalDate)}`;
       console.log("URL llamada:", url);
-
       fetch(url, {
         method: "GET",
         headers: { "Accept": "application/json" },
+
         credentials: "include"
       })
         .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`HTTP ${r.status} - ${t}`); }))
@@ -58,15 +51,11 @@ sap.ui.define([
           console.log("Respuesta API facturas:", data);
           this.oODataJSONModel.setData({ facturas: data.value || [] });
           this.getOwnerComponent().setModel(this.oODataJSONModel, "facturas");
-
           const hoy = new Date();
           const fechaHoy = hoy.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-          /// Calcular saldo pendiente (solo facturas no pagadas)
           let saldos = {};
           (data.value || []).forEach(f => {
             if (!f.IsCleared) {
-              // Para pendientes, usar el monto de factura (SupplierInvoiceItemAmount)
               const monto = parseFloat(f.SupplierInvoiceItemAmount || 0);
               const moneda = f.DocumentCurrency || "MXN";
               if (!isNaN(monto)) {
@@ -74,18 +63,14 @@ sap.ui.define([
               }
             }
           });
-
-          // Formatear el texto final
           const saldoTexto = Object.entries(saldos)
             .map(([mon, val]) => `${val.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${mon}`)
             .join(" | ");
-
           this.oTotalesModel.setData({
             fechaHoy,
-            saldo: saldoTexto,  // Texto con todas las monedas
-            moneda: ""  // Ya no usamos una sola moneda
+            saldo: saldoTexto,
+            moneda: ""
           });
-
           const oTable = this.byId("cuentasTable");
           const oBinding = oTable.getBinding("items");
           if (oBinding) {
@@ -113,25 +98,36 @@ sap.ui.define([
       this.getStatements(fnFormat(dFrom), fnFormat(dTo));
     },
 
-
     formatStatus: function (bCleared) {
       return bCleared ? "Pagada" : "Pendiente";
     },
 
-    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc) {
-      if (bCleared) {
-        return clearingDoc || "";   // si está pagada, mostrar ClearingAccountingDocument
-      } else {
-        return supplierInvoice || ""; // si está pendiente, mostrar SupplierInvoice
+    //  ACTUALIZADO: Controla el Número SAP según si es Factura o Pago
+    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc, docType) {
+      // Si es la fila de Factura (RE), mostrar el número de factura
+      if (docType === 'RE') {
+        return supplierInvoice || "";
+      }
+      // Si es la fila de Pago (KZ/ZP), mostrar el documento de pago
+      else {
+        return clearingDoc || "";
       }
     },
 
+    //  NUEVO: Controla la columna "Factura"
+    formatFacturaDisplay: function (supplierInvoice, docType) {
+      // Si es la fila de Factura (RE), dejar vacío
+      if (docType === 'RE') {
+        return "";
+      }
+      // Si es la fila de Pago, mostrar la factura a la que corresponde
+      return supplierInvoice || "";
+    },
+
     formatTipoDocumentoPorEstatus: function (bCleared, tipo, documentType) {
-      // Si viene DocumentType, usarlo directamente
       if (documentType) {
         return documentType === 'RE' ? 'FACTURA' : 'PAGO';
       }
-      // Fallback a lógica anterior
       if (bCleared) {
         return "PAGO";
       } else {
@@ -144,11 +140,8 @@ sap.ui.define([
       const oTable = this.byId("cuentasTable");
       const oBinding = oTable.getBinding("items");
       const oDateRange = this.byId("dateRange");
-
       if (!oBinding) return;
-
       let aFilters = [];
-
       switch (selectedIndex) {
         case 0: // Pendientes
           aFilters.push(new Filter("IsCleared", FilterOperator.EQ, false));
@@ -158,7 +151,7 @@ sap.ui.define([
         case 1: // Pagadas
           aFilters.push(new Filter("IsCleared", FilterOperator.EQ, true));
           oBinding.filter(aFilters);
-          oDateRange.setVisible(false); // ocultar calendario
+          oDateRange.setVisible(false);
           break;
         case 2: // Todos
           oBinding.filter([]);
@@ -167,21 +160,16 @@ sap.ui.define([
       }
     },
 
-
     onSearch: function (oEvent) {
       const sQuery = oEvent.getParameter("newValue") || oEvent.getSource().getValue();
       const sKey = this.byId("_IDGenSelect").getSelectedKey();
-
       const oTable = this.byId("cuentasTable");
       const oBinding = oTable.getBinding("items");
-
       if (!oBinding) return;
-
       let aFilters = [];
       if (sQuery) {
         aFilters.push(new Filter(sKey, FilterOperator.Contains, sQuery));
       }
-
       oBinding.filter(aFilters);
     },
 
@@ -189,12 +177,9 @@ sap.ui.define([
       const oDateRange = oEvent.getSource();
       const dFrom = oDateRange.getDateValue();
       const dTo = oDateRange.getSecondDateValue();
-
       if (!dFrom || !dTo) return;
-
       this.FechaIni = dFrom;
       this.FechaFin = dTo;
-
       const fnFormat = (d) => d.toISOString().split("T")[0];
       this.getStatements(fnFormat(dFrom), fnFormat(dTo));
     },
@@ -215,7 +200,6 @@ sap.ui.define([
           displayFormat: "yyyy-MM-dd",
           delimiter: " - "
         });
-
         const oButton = new sap.m.Button({
           text: "Consultar",
           type: "Emphasized",
@@ -223,18 +207,15 @@ sap.ui.define([
             const dFrom = oDateRange.getDateValue();
             const dTo = oDateRange.getSecondDateValue();
             const fnFormat = (d) => d.toISOString().split("T")[0];
-
             if (dFrom && dTo) {
               this.getStatements(fnFormat(dFrom), fnFormat(dTo));
             } else {
               const hoy = new Date();
               this.getStatements(null, fnFormat(hoy));
             }
-
             this.oCalendarPopover.close();
           }
         });
-
         this.oCalendarPopover = new sap.m.Popover({
           title: "Seleccione Período de Consulta",
           contentWidth: "300px",
@@ -243,7 +224,6 @@ sap.ui.define([
           showHeader: true
         });
       }
-
       const oButton = this.byId("bConsultarEC");
       this.oCalendarPopover.openBy(oButton);
     },
@@ -259,13 +239,39 @@ sap.ui.define([
         return;
       }
 
-      const uuidValue = oData.UUID || "";
+      // 1. Intentar usar el UUID que ya viene del backend (vinculado a la Factura RE)
+      let uuidValue = oData.UUID || "";
+
+      // 2. Fallback: Consultar UUID desde la API si no viene del backend
+      if (!uuidValue) {
+        try {
+          // Nota: Esto suele fallar para líneas de Pago porque el UUID está en la Factura (RE), no en el Pago (KZ)
+          const response = await fetch(
+            "/sap/opu/odata/sap/YY1_UUID_CDS/YY1_UUID?$format=json&$filter=AccountingDocument eq '" +
+            (oData.ClearingAccountingDocument || oData.AccountingDocument) +
+            "' and FiscalYear eq '" + (new Date().getFullYear()) + "'", {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+
+            credentials: "include"
+          }
+          );
+          if (response.ok) {
+            const result = await response.json();
+            const uuids = result?.d?.results?.filter(u => u.JrnlEntryCntrySpecificRef1?.trim()) || [];
+            uuidValue = uuids[0]?.JrnlEntryCntrySpecificRef1 || "";
+          }
+        } catch (err) {
+          console.error("Error consultando UUID:", err);
+        }
+      }
 
       // Construir datos para la tabla del diálogo
+      // Se agregaron más fallbacks para Reference (Referencia de Factura, Documento Material, etc.)
       const detalle = [{
         SupplierInvoice: oData.SupplierInvoice,
         UUID: uuidValue,
-        Reference: oData.DocumentReferenceID || oData.AssignmentReference,
+        Reference: oData.DocumentReferenceID || oData.SupplierInvoiceIDByInvcgParty || oData.ReferenceDocument || oData.AssignmentReference || "",
         FechaFactura: oData.ClearingCreationDate || oData.DocumentDate,
         Importe: oData.AmountInTransactionCurrency || oData.NetPaymentAmount,
         Moneda: oData.TransactionCurrency || oData.DocumentCurrency
@@ -326,18 +332,12 @@ sap.ui.define([
       return oDateFormat.format(date);
     },
 
-    // Nueva función para formato "8 ene 2026"
     formatDateSimple: function (v) {
       if (!v) return "";
-
-      // Evita el cambio de zona horaria dividiendo la fecha y creando el objeto en hora local
       const parts = v.split("-");
       if (parts.length !== 3) return "";
-
-      // new Date(año, mes-1, día) crea la fecha a las 00:00:00 en la zona horaria del navegador
       const date = new Date(parts[0], parts[1] - 1, parts[2]);
       if (isNaN(date.getTime())) return "";
-
       const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
       return oDateFormat.format(date);
     },
