@@ -573,7 +573,15 @@ sap.ui.define([
                     });
                     console.log(`[Tolerancia] TaxRate usado: ${(taxRate * 100).toFixed(2)}%`);
 
+                    /* retenciones
                     const nTotalWithTax = group.totalEffectiveAmount * (1 + taxRate);
+                    */
+                    // === INICIO  RETENCIONES: 
+                    const nTotalTaxes = group.totalEffectiveAmount * taxRate;
+                    const nTotalRetenciones = Number(datosCFDI.TOTAL_IMPUESTOSRET || 0);
+                    const nTotalWithTax = group.totalEffectiveAmount + nTotalTaxes - nTotalRetenciones;
+                    // === FIN RETENCIONES: 
+
                     const nInvoiceTotal = Number(datosCFDI.TOTAL);
 
                     console.log(`[Tolerancia] Cálculo:`);
@@ -581,6 +589,11 @@ sap.ui.define([
                     console.log(`   TaxRate: ${taxRate}`);
                     console.log(`   Total con impuesto: ${nTotalWithTax.toFixed(2)}`);
                     console.log(`   Total nota de crédito: ${nInvoiceTotal}`);
+                    // === INICIO  RETENCIONES: 
+                    console.log(`   Total impuestos trasladados calculado: ${nTotalTaxes.toFixed(2)}`);
+                    console.log(`   Total retenciones XML: ${nTotalRetenciones.toFixed(2)}`);
+                    console.log(`   Total con impuesto menos retenciones: ${nTotalWithTax.toFixed(2)}`);
+                    // === FIN RETENCIONES: 
 
                     const nLowerLimit = nTotalWithTax - nMinTolerance;
                     const nUpperLimit = nTotalWithTax + nMaxTolerance;
