@@ -170,8 +170,8 @@
                                             text="{documents>ReferenceDocument}"
                                         />
                                         <!-- Clase de Condición -->
-                                        <Text
-                                            text="{documents>Condition}"
+                                        <Text                                           
+                                             text="{documents>SuplrInvcDeliveryCostCndnType}"
                                         />
                                         <!-- Fecha -->
                                         <Text

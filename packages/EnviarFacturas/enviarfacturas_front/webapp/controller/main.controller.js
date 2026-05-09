@@ -455,8 +455,20 @@ sap.ui.define([
                                                             PurchaseOrderItem: String(oData.PurchaseOrderItem),
                                                             Supplier: oData.Supplier || data.datos.SUPPLIER,
                                                             Plant: oData.Plant || data.datos.SOCIETY,
-                                                            QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
-                                                            Importe: oData.EffectiveAmount || 0
+                                                            //QuantityInEntryUnit: oData.QuantityInEntryUnit || 1, costo indirecto
+
+                                                            Importe: oData.EffectiveAmount || 0,
+                                                            // === INICIO Gastos Indirectos
+                                                            QuantityInEntryUnit: oData.QuantityInEntryUnit ?? 0,
+                                                            EntryUnit: oData.EntryUnit || 'PC',
+                                                            IsDeliveryCost: oData.IsDeliveryCost,
+                                                            LineType: oData.LineType,
+                                                            ConditionType: oData.ConditionType,
+                                                            SuplrInvcDeliveryCostCndnType: oData.SuplrInvcDeliveryCostCndnType,
+                                                            FreightSupplier: oData.FreightSupplier,
+                                                            TaxCode: oData.TaxCode,
+                                                            MaterialDocumentYear: oData.MaterialDocumentYear
+                                                            // === FIN Gastos Indirectos
                                                         };
                                                     });
                                                     data.datos.ReferenceDocument = aCurrentSelected.length > 0
@@ -829,8 +841,18 @@ sap.ui.define([
                         PurchaseOrderItem: String(oData.PurchaseOrderItem),
                         Supplier: oData.Supplier || datosCFDI.SUPPLIER,
                         Plant: oData.Plant || oData.CompanyCode,
-                        QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
-                        Importe: oData.EffectiveAmount || 0
+                        //QuantityInEntryUnit: oData.QuantityInEntryUnit || 1, Costo indirecto
+                        Importe: oData.EffectiveAmount || 0,
+                        // === INICIO gastos indirectos
+                        QuantityInEntryUnit: oData.QuantityInEntryUnit ?? 0,
+                        IsDeliveryCost: oData.IsDeliveryCost,
+                        LineType: oData.LineType,
+                        ConditionType: oData.ConditionType,
+                        SuplrInvcDeliveryCostCndnType: oData.SuplrInvcDeliveryCostCndnType,
+                        FreightSupplier: oData.FreightSupplier,
+                        TaxCode: oData.TaxCode,
+                        MaterialDocumentYear: oData.MaterialDocumentYear
+                        // === FIN gastos indirectos
                     };
                 });
 
@@ -868,6 +890,20 @@ sap.ui.define([
                     longitud: datosCFDI.RetencionesConCodigos?.length,
                     serializado: typeof payload.CFDIData.RetencionesConCodigos
                 });
+                // === INICIO DEBUG TEMPORAL MIRO FRONT ===
+                console.log('[FRONT][ANTES DE MIRO] payload:', JSON.stringify({
+                    Items: payload.Items,
+                    SupplierInvoiceStatus: payload.SupplierInvoiceStatus,
+                    CFDIData: {
+                        UUID: payload.CFDIData.UUID,
+                        SUBTOTAL: payload.CFDIData.SUBTOTAL,
+                        TOTAL_IMPUESTOSTRAS: payload.CFDIData.TOTAL_IMPUESTOSTRAS,
+                        TOTAL_IMPUESTOSRET: payload.CFDIData.TOTAL_IMPUESTOSRET,
+                        TOTAL: payload.CFDIData.TOTAL,
+                        RetencionesConCodigos: payload.CFDIData.RetencionesConCodigos
+                    }
+                }, null, 2));
+                // === FIN DEBUG TEMPORAL MIRO FRONT ===
                 const res = await fetch("/odata/v4/goods-receipts/CreateSupplierInvoiceFromList", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Accept": "application/json" },
