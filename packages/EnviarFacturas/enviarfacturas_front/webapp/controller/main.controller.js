@@ -4,8 +4,9 @@ sap.ui.define([
     "sap/ui/core/BusyIndicator",
     "sap/m/Dialog",
     "sap/m/Text",
-    "sap/m/Button"
-], (Controller, MessageBox, BusyIndicator, Dialog, Text, Button) => {
+    "sap/m/Button",
+    "sap/ui/model/json/JSONModel"
+], (Controller, MessageBox, BusyIndicator, Dialog, Text, Button, JSONModel) => {
 
     "use strict";
 
@@ -89,10 +90,24 @@ sap.ui.define([
                         ...item,
                         DocumentDate: item.DocumentDate ? new Date(item.DocumentDate.replace(/Z$/, '')) : null
                     }));
+                    /*
                     this.getView().setModel(
                         new sap.ui.model.json.JSONModel({ results: aFacturas }),
                         "documents"
                     );
+                    */
+                    //CSF
+                    const oModel = new JSONModel({
+                        results: aFacturas
+                    });
+                    oModel.setSizeLimit(9999);
+                    this.getView().setModel(oModel, "documents");
+                    console.log("FACTURAS:", aFacturas);
+                    console.log("MODELO:", oModel.getData());
+                    console.log("TABLA:", this.byId("docMatList"));
+                    console.log("BINDING:", this.byId("docMatList").getBinding("items"));
+                    //CSF
+
                     BusyIndicator.hide();
                 })
                 .catch(err => {

@@ -30,12 +30,18 @@
                             id="startDatePicker"
                             width="auto"
                             change="onChangeDate"
+                            displayFormat="dd/MM/yyyy"
+    valueFormat="yyyy-MM-dd"
+    placeholder="dd/MM/yyyy"
                         />
                         <Label text="{i18n>facturas.hasta}" />
                         <DatePicker
                             id="endDatePicker"
                             width="auto"
                             change="onChangeDate"
+                            displayFormat="dd/MM/yyyy"
+    valueFormat="yyyy-MM-dd"
+    placeholder="dd/MM/yyyy"
                         />
                     </Toolbar>
                 </items>
