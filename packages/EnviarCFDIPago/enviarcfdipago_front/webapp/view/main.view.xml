@@ -50,7 +50,7 @@
                 mode="MultiSelect"
                 alternateRowColors="true"
                 items="{PCModel>/paymentComplements}"
-                selectionChange="validateSociety"
+                selectionChange="onTableSelectionChange"
             >
                 <infoToolbar>
                     <Toolbar
@@ -275,7 +275,11 @@
                     </Column>
                 </columns>
                 <items>
-                    <ColumnListItem type="Active">
+                    <ColumnListItem
+                        id="_IDGenColumnListItem1"
+                        highlight="{= ${documents>isBlackListed} ? 'Error' : 'None' }"
+                        type="{= ${documents>isBlackListed} ? 'Inactive' : 'Active' }"
+                    >
                         <cells>
                             <ObjectIdentifier
                                 title="{PCModel>PaymentDocument}"

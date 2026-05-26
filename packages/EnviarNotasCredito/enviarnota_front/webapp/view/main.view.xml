@@ -40,7 +40,7 @@
             <VBox>
                 <Toolbar>
                     <content>
-                       <!-- <Title text="{i18n>nota.header}" /> -->
+                        <!-- <Title text="{i18n>nota.header}" /> -->
                         <ToolbarSpacer />
                         <SearchField
                             id="searchField"
@@ -98,7 +98,7 @@
                     mode="MultiSelect"
                     alternateRowColors="true"
                     items="{documents>/results}"
-                    selectionChange="validateSociety"
+                    selectionChange="onTableSelectionChange"
                 >
                     <columns>
                         <Column>
@@ -128,7 +128,11 @@
                     </columns>
 
                     <items>
-                        <ColumnListItem>
+                        <ColumnListItem
+                            id="_IDGenColumnListItem1"
+                            highlight="{= ${documents>isBlackListed} ? 'Error' : 'None' }"
+                            type="{= ${documents>isBlackListed} ? 'Inactive' : 'Active' }"
+                        >
                             <cells>
                                 <Text text="{documents>MaterialDocument}" />
                                 <Text text="{documents>PurchaseOrder}" />

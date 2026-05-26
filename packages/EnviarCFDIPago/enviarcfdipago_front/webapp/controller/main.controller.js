@@ -605,6 +605,32 @@ sap.ui.define([
             }
         },
 
+        onTableSelectionChange: function (oEvent) {
+            // Evita bucles infinitos si el evento se dispara al deseleccionar programáticamente
+            if (this._isProcessingSelection) return;
+            this._isProcessingSelection = true;
+
+            const oTable = this.byId("docMatList");
+            const aSelected = oTable.getSelectedItems();
+
+            // Identificar items que NO deberían haber sido seleccionados (Lista Negra)
+            const aInvalidSelection = aSelected.filter(item => {
+                const ctx = item.getBindingContext("documents");
+                return ctx && ctx.getObject().isBlackListed === true;
+            });
+
+            if (aInvalidSelection.length > 0) {
+                // Deseleccionar inmediatamente los items de lista negra
+                aInvalidSelection.forEach(item => oTable.setSelectedItem(item, false));
+
+                // Mensaje opcional para el usuario
+                sap.m.MessageToast.show("Este proveedor está en Lista Negra y no puede ser seleccionado.");
+            }
+
+            // Liberar el bloqueo en el siguiente ciclo de eventos
+            setTimeout(() => { this._isProcessingSelection = false; }, 0);
+        },
+
         _showResultDialog: function (aResults) {
             const oController = this;
             const oVBox = new VBox({
