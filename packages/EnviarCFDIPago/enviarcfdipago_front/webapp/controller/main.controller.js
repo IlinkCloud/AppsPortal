@@ -475,6 +475,7 @@ sap.ui.define([
                         "RfcOrd": datosCFDI.RFC_EMISOR_CTA_ORD || "",
                         "Bank": datosCFDI.NOM_BANCO_ORD_EXT || "",
                         "OrdAccount": datosCFDI.CTA_ORDENANTE || "",
+                        "BenAccount": datosCFDI.CTA_BENEFICIARIO || "",
                         "RfcBen": datosCFDI.RFC_EMISOR_CTA_BEN || "",
                         "PaymentOperationNumber": datosCFDI.NUM_OPERACION || "",
                         "XmlName": xmlFile ? xmlFile.name : "",
