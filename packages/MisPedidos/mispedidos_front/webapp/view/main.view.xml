@@ -44,7 +44,7 @@
                                             headerText="Header"
                                             backgroundDesign="Solid"
                                             showSeparators="All"
-                                            growing="true"
+                                            growing="false"
                                             growingThreshold="10"
                                             growingScrollToLoad="true"
                                             items="{
