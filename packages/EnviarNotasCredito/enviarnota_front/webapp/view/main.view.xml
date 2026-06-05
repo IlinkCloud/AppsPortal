@@ -130,8 +130,8 @@
                     <items>
                         <ColumnListItem
                             id="_IDGenColumnListItem1"
-                            highlight="{= ${documents>isBlackListed} ? 'Error' : 'None' }"
-                            type="{= ${documents>isBlackListed} ? 'Inactive' : 'Active' }"
+                            highlight="{= ${documents>isBlackListed} || ${documents>isUserBlocked} ? 'Error' : 'None' }"
+                            type="{= ${documents>isBlackListed} || ${documents>isUserBlocked} ? 'Inactive' : 'Active' }"
                         >
                             <cells>
                                 <Text text="{documents>MaterialDocument}" />

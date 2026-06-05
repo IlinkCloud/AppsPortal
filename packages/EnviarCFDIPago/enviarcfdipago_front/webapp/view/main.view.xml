@@ -276,9 +276,8 @@
                 </columns>
                 <items>
                     <ColumnListItem
-                        id="_IDGenColumnListItem1"
-                        highlight="{= ${documents>isBlackListed} ? 'Error' : 'None' }"
-                        type="{= ${documents>isBlackListed} ? 'Inactive' : 'Active' }"
+                        highlight="{= ${PCModel>isUserBlocked} || ${PCModel>isBlackListed} ? 'Error' : 'None' }"
+                        type="{= ${PCModel>isUserBlocked} || ${PCModel>isBlackListed} ? 'Inactive' : 'Active' }"
                     >
                         <cells>
                             <ObjectIdentifier

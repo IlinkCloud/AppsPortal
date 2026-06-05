@@ -179,28 +179,44 @@ sap.ui.define([
         },
 
         onTableSelectionChange: function (oEvent) {
-            // Evita bucles infinitos si el evento se dispara al deseleccionar programáticamente
             if (this._isProcessingSelection) return;
             this._isProcessingSelection = true;
 
             const oTable = this.byId("docMatList");
             const aSelected = oTable.getSelectedItems();
 
-            // Identificar items que NO deberían haber sido seleccionados (Lista Negra)
+            // Identificar items que NO deberían haber sido seleccionados
             const aInvalidSelection = aSelected.filter(item => {
                 const ctx = item.getBindingContext("documents");
-                return ctx && ctx.getObject().isBlackListed === true;
+                if (!ctx) return false;
+                const oData = ctx.getObject();
+                // Marcar como inválidos si están en Lista Negra O bloqueados manualmente
+                return oData.isBlackListed === true || oData.isUserBlocked === true;
             });
 
             if (aInvalidSelection.length > 0) {
-                // Deseleccionar inmediatamente los items de lista negra
                 aInvalidSelection.forEach(item => oTable.setSelectedItem(item, false));
 
-                // Mensaje opcional para el usuario
-                sap.m.MessageToast.show("Este proveedor está en Lista Negra y no puede ser seleccionado.");
+                // Mensaje diferenciado según el tipo de bloqueo
+                const hasBlackList = aInvalidSelection.some(item =>
+                    item.getBindingContext("documents").getObject().isBlackListed === true
+                );
+                const hasUserBlock = aInvalidSelection.some(item =>
+                    item.getBindingContext("documents").getObject().isUserBlocked === true
+                );
+
+                let message = "";
+                if (hasBlackList && hasUserBlock) {
+                    message = "Hay proveedores en Lista Negra o bloqueados que no pueden ser seleccionados.";
+                } else if (hasBlackList) {
+                    message = "Este proveedor está en Lista Negra y no puede ser seleccionado.";
+                } else if (hasUserBlock) {
+                    message = "Este proveedor está bloqueado manualmente y no puede ser seleccionado.";
+                }
+
+                sap.m.MessageToast.show(message);
             }
 
-            // Liberar el bloqueo en el siguiente ciclo de eventos
             setTimeout(() => { this._isProcessingSelection = false; }, 0);
         },
 
