@@ -1,6 +1,6 @@
 {
   "xsappname": "aclaraciones",
- "tenant-mode": "shared",
+  "tenant-mode": "shared",
   "description": "Security profile of called application",
   "scopes": [
     {

@@ -1,20 +1,171 @@
 <mvc:View
     controllerName="aclaracionesfront.controller.MainView"
-    xmlns:core="sap.ui.core"
-    xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns:t="sap.ui.table"
+    xmlns:rowmodes="sap.ui.table.rowmodes"
     xmlns:html="http://www.w3.org/1999/xhtml"
 >
-    <App id="_IDGenApp">
+    <App>
         <pages>
             <Page
-                id="_IDGenPage"
                 title="{i18n>clarifications.title}"
                 showNavButton="false"
                 showSubHeader="false"
                 navButtonPress="onNavBack"
             >
                 <content>
+                    <t:Table
+                        id="idTableAcla"
+                        rows="{obtenAcla>/results}"
+                        selectionMode="Single"
+                        selectionBehavior="RowSelector"
+                        alternateRowColors="true"
+                        enableColumnReordering="true"
+                        enableBusyIndicator="true"
+                        enableSelectAll="false"
+                        noData="{i18n>clarifications.without}"
+                        rowSelectionChange="onRowSelectionChangeAcla"
+                    >
+                        <t:rowMode>
+                            <rowmodes:Interactive rowCount="15" />
+                        </t:rowMode>
+                        <!--
+                        <t:extension>
+                            <OverflowToolbar>
+                                <Title
+                                    text="{i18n>clarifications.send}"
+                                    level="H2"
+                                />
+
+                                <ToolbarSpacer />
+
+                                <SearchField
+                                    placeholder="{i18n>clarifications.search}"
+                                    width="20rem"
+                                    liveChange="filtrado"
+                                />
+
+                                <Select id="selectFilter">
+                                    <items>
+                                        <core:Item
+                                            key="Id"
+                                            text="{i18n>clarifications.id}"
+                                        />
+                                        <core:Item
+                                            key="Documents"
+                                            text="{i18n>clarifications.numDoc}"
+                                        />
+                                        <core:Item
+                                            key="DocumentType"
+                                            text="{i18n>clarifications.typeDoc}"
+                                        />
+                                        <core:Item
+                                            key="Message"
+                                            text="{i18n>clarifications.textBrief}"
+                                        />
+                                        <core:Item
+                                            key="Status"
+                                            text="{i18n>clarifications.status}"
+                                        />
+                                    </items>
+                                </Select>
+                            </OverflowToolbar>
+                        </t:extension>
+                    -->
+                        <t:columns>
+                            <t:Column
+                                width="8rem"
+                                label="{i18n>clarifications.id}"
+                                sortProperty="Id"
+                                filterProperty="Id"
+                            >
+                                <t:template>
+                                    <Text text="{obtenAcla>Id}" />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="8rem"
+                                label="{i18n>clarifications.supplier}"
+                                sortProperty="Supplier"
+                                filterProperty="Supplier"
+                            >
+                                <t:template>
+                                    <Text text="{obtenAcla>Supplier}" />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="10rem"
+                                label="{i18n>clarifications.numDoc}"
+                                sortProperty="Documents"
+                                filterProperty="Documents"
+                            >
+                                <t:template>
+                                    <Text
+                                        text="{obtenAcla>DocumentNumber}"
+                                        wrapping="false"
+                                    />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="10rem"
+                                label="{i18n>clarifications.typeDoc}"
+                                sortProperty="DocumentType"
+                                filterProperty="DocumentType"
+                            >
+                                <t:template>
+                                    <Text text="{obtenAcla>DocumentType}" />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="30rem"
+                                label="{i18n>clarifications.textBrief}"
+                                sortProperty="Message"
+                                filterProperty="Message"
+                            >
+                                <t:template>
+                                    <Text
+                                        text="{obtenAcla>Message}"
+                                        maxLines="1"
+                                        wrapping="false"
+                                    />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="10rem"
+                                label="{i18n>clarifications.date}"
+                                sortProperty="Date"
+                                filterProperty="Date"
+                            >
+                                <t:template>
+                                    <Text
+                                        text="{
+                                            path: 'obtenAcla>CreationDate',
+                                            formatter: '.formatDate'
+                                        }"
+                                    />
+                                </t:template>
+                            </t:Column>
+
+                            <t:Column
+                                width="10rem"
+                                label="{i18n>clarifications.status}"
+                                sortProperty="Status"
+                                filterProperty="Status"
+                            >
+                                <t:template>
+                                    <Text text="{obtenAcla>Status}" />
+                                </t:template>
+                            </t:Column>
+                        </t:columns>
+                    </t:Table>
+                    <!--
                     <Table
                         noDataText="{i18n>clarifications.without}"
                         id="idTableAcla"
@@ -164,6 +315,7 @@
                             </Column>
                         </columns>
                     </Table>
+                    -->
                 </content>
             </Page>
         </pages>
