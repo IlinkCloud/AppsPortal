@@ -9,21 +9,18 @@ sap.ui.define([
     "sap/ui/core/format/DateFormat"
 ], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox, DateFormat) => {
     "use strict";
-
     var tipoUpload = "";
     var baulAnexos = { pdf: [], png: [], jpeg: [], msword: [], trash: [] };
     var anexosBLOB = {};
     var urlImage = "";
     var dPersL = "";
     var dIdL = "";
-
     var oODataJSONModel = new JSONModel();
 
     return Controller.extend("pagoscalendarizadosfront.controller.main", {
         onInit() {
             this._pdfViewer = new PDFViewer();
             this.getView().addDependent(this._pdfViewer);
-
             this.getView().addEventDelegate({
                 onBeforeShow: function () {
                     this.getFacturasenRevision();
@@ -82,15 +79,10 @@ sap.ui.define([
         // Nueva función para formato "8 ene 2026"
         formatDateSimple: function (v) {
             if (!v) return "";
-
-            // Evita el cambio de zona horaria dividiendo la fecha y creando el objeto en hora local
             const parts = v.split("-");
             if (parts.length !== 3) return "";
-
-            // new Date(año, mes-1, día) crea la fecha a las 00:00:00 en la zona horaria del navegador
             const date = new Date(parts[0], parts[1] - 1, parts[2]);
             if (isNaN(date.getTime())) return "";
-
             const oDateFormat = DateFormat.getDateInstance({ pattern: "d MMM yyyy" });
             return oDateFormat.format(date);
         },
@@ -110,9 +102,296 @@ sap.ui.define([
         },
 
         ////////////////////// UPLOAD BUTTONS
+        // Propiedad para almacenar archivos de aclaración
+        _aclaracionFiles: [],
+        _oEmptyFilesMessage: null,
+
         aclaracionButton: function () {
-            tipoUpload = "A";
-            this.openUploadDialog(tipoUpload);
+            this._mostrarDialogoAclaracion();
+        },
+
+        _mostrarDialogoAclaracion: function () {
+            const oController = this;
+
+            // Resetear archivos
+            this._aclaracionFiles = [];
+
+            // Label de anexos
+            const oAnexosLabel = new sap.m.Label({
+                text: "Anexos (0)",
+                design: "Bold"
+            });
+
+            // Input file HTML nativo (oculto)
+            const oFileInput = document.createElement("input");
+            oFileInput.type = "file";
+            oFileInput.multiple = true;
+            oFileInput.accept = ".pdf,.png,.jpg,.jpeg";
+            oFileInput.style.display = "none";
+
+            oFileInput.addEventListener("change", function () {
+                const aNewFiles = Array.from(oFileInput.files);
+                const aCurrentFiles = oController._aclaracionFiles;
+
+                if (aNewFiles.length === 0) return;
+
+                // Validar máximo 5 archivos
+                if (aCurrentFiles.length + aNewFiles.length > 5) {
+                    sap.m.MessageBox.warning(
+                        `Solo se permiten máximo 5 archivos. Actualmente tiene ${aCurrentFiles.length} archivo(s).`
+                    );
+                    oFileInput.value = "";
+                    return;
+                }
+
+                // Validar cada archivo
+                for (const oFile of aNewFiles) {
+                    // Validar tamaño (10 MB)
+                    if (oFile.size > 10 * 1024 * 1024) {
+                        sap.m.MessageBox.warning(
+                            `El archivo "${oFile.name}" excede el límite de 10 MB.`
+                        );
+                        continue;
+                    }
+
+                    // Validar tipo
+                    const sFileType = oFile.type;
+                    const sValidTypes = ["application/pdf", "image/png", "image/jpeg"];
+                    if (!sValidTypes.includes(sFileType)) {
+                        sap.m.MessageBox.warning(
+                            `El archivo "${oFile.name}" no es válido. Solo se permiten PDF, PNG y JPG.`
+                        );
+                        continue;
+                    }
+
+                    // Agregar archivo
+                    oController._aclaracionFiles.push({
+                        file: oFile,
+                        name: oFile.name,
+                        size: oFile.size,
+                        type: oFile.type
+                    });
+                }
+
+                // Limpiar el input para permitir volver a seleccionar
+                oFileInput.value = "";
+
+                // Actualizar UI
+                oController._actualizarListaAnexos(oAclaracionList, oAnexosLabel);
+            });
+
+            // Botón Agregar - Dispara el input file
+            const oBtnAgregar = new sap.m.Button({
+                text: "Agregar",
+                press: function () {
+                    oFileInput.click();
+                }
+            });
+
+            // Lista de archivos
+            const oAclaracionList = new sap.m.List({
+                id: this.createId("aclaracionList"),
+                showSeparators: "Inner",
+                items: []
+            });
+
+            // TextArea para comentario
+            const oCommentArea = new sap.m.TextArea({
+                id: this.createId("aclaracionComment"),
+                placeholder: "Ingrese un comentario descriptivo para la aclaración.",
+                rows: 4,
+                width: "100%",
+                value: ""
+            });
+
+            // Label de contacto
+            const oContactLabel = new sap.m.Label({
+                text: "Contacto: ()"
+            });
+
+            // Mensaje cuando no hay archivos
+            const oEmptyMessage = new sap.m.VBox({
+                alignItems: "Center",
+                items: [
+                    new sap.ui.core.Icon({
+                        src: "sap-icon://document",
+                        size: "4rem",
+                        color: "#a0a0a0"
+                    }),
+                    new sap.m.Text({
+                        text: "No se ha cargado ningún archivo"
+                    }).addStyleClass("sapUiSmallMarginTopBottom"),
+                    new sap.m.Text({
+                        text: "Máximo 5 archivos/10 Mb. Formatos válidos: PDF, PNG y JPG.",
+                        textAlign: "Center"
+                    }).addStyleClass("sapUiTinyMarginTop")
+                ],
+                visible: true
+            });
+            this._oEmptyFilesMessage = oEmptyMessage;
+
+            // Crear diálogo
+            const oDialog = new sap.m.Dialog({
+                title: "Cargar archivos para aclaración",
+                contentWidth: "600px",
+                content: [
+                    new sap.m.VBox({
+                        width: "100%",
+                        alignItems: "Center",
+                        items: [
+                            new sap.m.HBox({
+                                width: "100%",
+                                justifyContent: "SpaceBetween",
+                                alignItems: "Center",
+                                items: [
+                                    oAnexosLabel,
+                                    oBtnAgregar
+                                ]
+                            }).addStyleClass("sapUiSmallMarginBottom"),
+
+                            oEmptyMessage.addStyleClass("sapUiMediumMarginTopBottom"),
+                            oAclaracionList.addStyleClass("sapUiSmallMarginTopBottom"),
+                            oContactLabel.addStyleClass("sapUiSmallMarginTopBottom"),
+                            oCommentArea
+                        ]
+                    })
+                ],
+                beginButton: new sap.m.Button({
+                    text: "Enviar",
+                    type: "Emphasized",
+                    press: async function () {
+                        // Validar comentario obligatorio
+                        const sComment = oCommentArea.getValue().trim();
+                        if (!sComment) {
+                            sap.m.MessageBox.error(
+                                "El comentario es obligatorio. Por favor ingrese una descripción de la aclaración.",
+                                { title: "Comentario requerido" }
+                            );
+                            return;
+                        }
+
+                        // Validar que haya al menos un archivo
+                        if (oController._aclaracionFiles.length === 0) {
+                            sap.m.MessageBox.warning(
+                                "Debe cargar al menos un archivo.",
+                                { title: "Archivos requeridos" }
+                            );
+                            return;
+                        }
+
+                        // Enviar aclaración
+                        await oController._enviarAclaracion(sComment, oDialog);
+                    }
+                }),
+                endButton: new sap.m.Button({
+                    text: "Cerrar",
+                    press: function () {
+                        oDialog.close();
+                    }
+                }),
+                afterClose: function () {
+                    oDialog.destroy();
+                    oController._aclaracionFiles = [];
+                }
+            });
+
+            // Guardar referencia y abrir
+            this._oAclaracionDialog = oDialog;
+            oDialog.open();
+
+            // Agregar el input file al body del documento (fuera del diálogo)
+            document.body.appendChild(oFileInput);
+        },
+
+        _actualizarListaAnexos: function (oList, oLabel) {
+            const aFiles = this._aclaracionFiles;
+
+            // Actualizar label
+            oLabel.setText(`Anexos (${aFiles.length})`);
+
+            // Mostrar/ocultar mensaje de vacío
+            if (this._oEmptyFilesMessage) {
+                this._oEmptyFilesMessage.setVisible(aFiles.length === 0);
+            }
+
+            // Limpiar lista
+            oList.removeAllItems();
+
+            // Agregar items
+            aFiles.forEach((oFileData, nIndex) => {
+                const sSizeKB = (oFileData.size / 1024).toFixed(1);
+
+                oList.addItem(
+                    new sap.m.CustomListItem({
+                        content: [
+                            new sap.m.HBox({
+                                alignItems: "Center",
+                                justifyContent: "SpaceBetween",
+                                width: "100%",
+                                items: [
+                                    new sap.m.HBox({
+                                        alignItems: "Center",
+                                        items: [
+                                            new sap.ui.core.Icon({
+                                                src: this._getIconForFileType(oFileData.type),
+                                                size: "2rem",
+                                                color: "#0070d2"
+                                            }).addStyleClass("sapUiSmallMarginEnd"),
+                                            new sap.m.VBox({
+                                                items: [
+                                                    new sap.m.Text({
+                                                        text: oFileData.name,
+                                                        emphasizing: true
+                                                    }),
+                                                    new sap.m.Text({
+                                                        text: `${sSizeKB} KB`,
+                                                        description: true
+                                                    })
+                                                ]
+                                            })
+                                        ]
+                                    }),
+                                    new sap.ui.core.Icon({
+                                        src: "sap-icon://decline",
+                                        color: "#ff0000",
+                                        press: function () {
+                                            this._aclaracionFiles.splice(nIndex, 1);
+                                            this._actualizarListaAnexos(oList, oLabel);
+                                        }.bind(this)
+                                    })
+                                ]
+                            })
+                        ]
+                    })
+                );
+            });
+
+            // Mostrar lista si hay archivos
+            oList.setVisible(aFiles.length > 0);
+        },
+
+        _getIconForFileType: function (sType) {
+            if (sType === "application/pdf") {
+                return "sap-icon://pdf-attachment";
+            } else if (sType.includes("image")) {
+                return "sap-icon://image";
+            }
+            return "sap-icon://document";
+        },
+
+        _enviarAclaracion: async function (sComment, oDialog) {
+            console.log("Comentario:", sComment);
+            console.log("Archivos:", this._aclaracionFiles);
+
+            sap.m.MessageBox.success(
+                "Función en desarrollo. Archivos listos para enviar.",
+                {
+                    title: "Información",
+                    onClose: function () {
+                        oDialog.close();
+                    }
+                }
+            );
         },
 
         uploadButton: function () {
@@ -122,15 +401,6 @@ sap.ui.define([
 
         openUploadDialog: function (tipoUploadIn) {
             switch (tipoUploadIn) {
-                case "A":
-                    if (!this._uploadDialog1) {
-                        this._uploadDialog1 = sap.ui.xmlfragment(tipoUpload, "pagoscalendarizadosfront.fragments.UploadAclaracion", this);
-                        this.getView().addDependent(this._uploadDialog1);
-                    }
-                    this._uploadDialog1.open();
-                    sap.ui.getCore().getControl(tipoUploadIn + "--idCto").setText(" (" + dIdL + ")  ");
-                    sap.ui.getCore().getControl(tipoUploadIn + "--persCto").setText(dPersL);
-                    break;
                 case "F":
                     if (!this._uploadDialog2) {
                         this._uploadDialog2 = sap.ui.xmlfragment(tipoUpload, "pagoscalendarizadosfront.fragments.UploadInvoice", this);
@@ -147,41 +417,24 @@ sap.ui.define([
             sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection").setBusy(true);
             var bContinue = true;
 
-            if (tipoUpload === "A") {
-                if (fileList.length === 0) {
-                    MessageBox.information("Se debe seleccionar al menos un archivo por carga");
-                    bContinue = false;
-                }
-                var uploadFilesAcla = { pdf: [], png: [], jpeg: [], msword: [], trash: [] };
-                if (bContinue) {
-                    for (var i = 0; i < fileList.length; i++) {
-                        switch (fileList[i].type) {
-                            case "application/msword": uploadFilesAcla.msword.push(fileList[i]); baulAnexos.msword.push(fileList[i]); break;
-                            case "image/jpeg": uploadFilesAcla.jpeg.push(fileList[i]); baulAnexos.jpeg.push(fileList[i]); break;
-                            case "image/png": uploadFilesAcla.png.push(fileList[i]); baulAnexos.png.push(fileList[i]); break;
-                            case "application/pdf": uploadFilesAcla.pdf.push(fileList[i]); baulAnexos.pdf.push(fileList[i]); break;
-                            default: uploadFilesAcla.trash.push(fileList[i]); baulAnexos.trash.push(fileList[i]); break;
-                        }
-                    }
-                    this.readCfdi(uploadFilesAcla);
-                } else sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection").setBusy(false);
+            var uploadFiles = { xml: [], pdf: [] };
+            if (fileList.length !== 2) {
+                MessageBox.information("Se debe seleccionar un máximo de dos archivos por carga.");
+                bContinue = false;
             }
 
-            if (tipoUpload === "F") {
-                if (fileList.length !== 2) {
-                    MessageBox.information("Se debe seleccionar un máximo de dos archivos por carga.");
-                    bContinue = false;
+            if (bContinue) {
+                for (var i = 0; i < fileList.length; i++) {
+                    if (fileList[i].type === "text/xml") uploadFiles.xml.push(fileList[i]);
+                    if (fileList[i].type === "application/pdf") uploadFiles.pdf.push(fileList[i]);
                 }
-                var uploadFiles = { xml: [], pdf: [] };
-                if (bContinue) {
-                    for (i = 0; i < fileList.length; i++) {
-                        if (fileList[i].type === "text/xml") uploadFiles.xml.push(fileList[i]);
-                        if (fileList[i].type === "application/pdf") uploadFiles.pdf.push(fileList[i]);
-                    }
-                    if (uploadFiles.xml.length !== 1 || uploadFiles.pdf.length !== 1) {
-                        MessageBox.information("Seleccione sólo un archivo XML y un PDF para continuar.");
-                    } else this.readCfdi(uploadFiles);
-                } else sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection").setBusy(false);
+                if (uploadFiles.xml.length !== 1 || uploadFiles.pdf.length !== 1) {
+                    MessageBox.information("Seleccione sólo un archivo XML y un PDF para continuar.");
+                } else {
+                    this.readCfdi(uploadFiles);
+                }
+            } else {
+                sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection").setBusy(false);
             }
         },
 
@@ -191,33 +444,9 @@ sap.ui.define([
             anexosBLOB = {};
             if (upFiles.pdf) upFiles.pdf.forEach(f => anexosBLOB[f.name] = f);
             if (upFiles.xml) upFiles.xml.forEach(f => anexosBLOB[f.name] = f);
-            if (upFiles.jpeg) upFiles.jpeg.forEach(f => anexosBLOB[f.name] = f);
-            if (upFiles.png) upFiles.png.forEach(f => anexosBLOB[f.name] = f);
-            if (upFiles.msword) upFiles.msword.forEach(f => anexosBLOB[f.name] = f);
 
             sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection").setBusy(false);
             MessageToast.show("Archivos listos para enviar");
-        },
-
-        ////////////////////// ENVÍO ACLARACIÓN
-        onSubmitAcla: function () {
-            var mensaje = sap.ui.getCore().getControl(tipoUpload + "--cmntAnexo").getValue();
-            if (!mensaje) {
-                MessageBox.error("Es obligatorio introducir un mensaje de aclaración.");
-                return;
-            }
-            // Aquí enviar al backend los archivos tipo A con el mensaje
-            console.log("Enviando aclaración con archivos:", anexosBLOB, "y mensaje:", mensaje);
-            // MessageToast.show("Aclaración enviada correctamente");
-            this.onCloseDialogUpload();
-        },
-
-        ////////////////////// ENVÍO FACTURA
-        sendFact: function () {
-            // Similar a aclaración pero para archivos tipo F
-            console.log("Enviando factura con archivos:", anexosBLOB);
-            MessageToast.show("Factura enviada correctamente");
-            this.onCloseDialogUpload();
         },
 
         ////////////////////// ELIMINAR FACTURA
@@ -226,6 +455,7 @@ sap.ui.define([
             var uploadCollection = sap.ui.core.Fragment.byId(tipoUpload, "UploadCollection");
             var factList = sap.ui.core.Fragment.byId(tipoUpload, "factList");
             var closeDialog = sap.ui.core.Fragment.byId(tipoUpload, "closeDialog");
+
             uploadCollection.setVisible(true);
             factList.setVisible(false);
             closeDialog.setVisible(true);
@@ -253,9 +483,7 @@ sap.ui.define([
 
         ////////////////////// CERRAR DIALOG
         onCloseDialogUpload: function () {
-            if (this._uploadDialog1) this._uploadDialog1.close();
             if (this._uploadDialog2) this._uploadDialog2.close();
         }
-
     });
 });
