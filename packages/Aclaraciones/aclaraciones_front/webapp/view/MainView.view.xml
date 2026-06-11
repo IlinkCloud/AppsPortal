@@ -5,7 +5,6 @@
     xmlns:core="sap.ui.core"
     xmlns:t="sap.ui.table"
     xmlns:rowmodes="sap.ui.table.rowmodes"
-    xmlns:html="http://www.w3.org/1999/xhtml"
 >
     <App>
         <pages>
@@ -31,52 +30,9 @@
                         <t:rowMode>
                             <rowmodes:Interactive rowCount="15" />
                         </t:rowMode>
-                        <!--
-                        <t:extension>
-                            <OverflowToolbar>
-                                <Title
-                                    text="{i18n>clarifications.send}"
-                                    level="H2"
-                                />
-
-                                <ToolbarSpacer />
-
-                                <SearchField
-                                    placeholder="{i18n>clarifications.search}"
-                                    width="20rem"
-                                    liveChange="filtrado"
-                                />
-
-                                <Select id="selectFilter">
-                                    <items>
-                                        <core:Item
-                                            key="Id"
-                                            text="{i18n>clarifications.id}"
-                                        />
-                                        <core:Item
-                                            key="Documents"
-                                            text="{i18n>clarifications.numDoc}"
-                                        />
-                                        <core:Item
-                                            key="DocumentType"
-                                            text="{i18n>clarifications.typeDoc}"
-                                        />
-                                        <core:Item
-                                            key="Message"
-                                            text="{i18n>clarifications.textBrief}"
-                                        />
-                                        <core:Item
-                                            key="Status"
-                                            text="{i18n>clarifications.status}"
-                                        />
-                                    </items>
-                                </Select>
-                            </OverflowToolbar>
-                        </t:extension>
-                    -->
                         <t:columns>
                             <t:Column
-                                width="8rem"
+                                width="7rem"
                                 label="{i18n>clarifications.id}"
                                 sortProperty="Id"
                                 filterProperty="Id"
@@ -87,7 +43,7 @@
                             </t:Column>
 
                             <t:Column
-                                width="8rem"
+                                width="6rem"
                                 label="{i18n>clarifications.supplier}"
                                 sortProperty="Supplier"
                                 filterProperty="Supplier"
@@ -118,7 +74,12 @@
                                 filterProperty="DocumentType"
                             >
                                 <t:template>
-                                    <Text text="{obtenAcla>DocumentType}" />
+                                    <Text
+                                        text="{
+                                            path: 'obtenAcla>DocumentType',
+                                            formatter: '.formatDocumentType'
+                                        }"
+                                    />
                                 </t:template>
                             </t:Column>
 
@@ -147,175 +108,33 @@
                                     <Text
                                         text="{
                                             path: 'obtenAcla>CreationDate',
-                                            formatter: '.formatDate'
+                                            formatter: '.formatLocalDate'
                                         }"
                                     />
                                 </t:template>
                             </t:Column>
 
                             <t:Column
-                                width="10rem"
+                                width="6rem"
                                 label="{i18n>clarifications.status}"
                                 sortProperty="Status"
                                 filterProperty="Status"
                             >
                                 <t:template>
-                                    <Text text="{obtenAcla>Status}" />
+                                    <ObjectStatus
+                                        text="{
+                                            path: 'obtenAcla>Status',
+                                            formatter: '.formatStatusText'
+                                        }"
+                                        state="{
+                                            path: 'obtenAcla>Status',
+                                            formatter: '.formatStatusState'
+                                        }"
+                                    />
                                 </t:template>
                             </t:Column>
                         </t:columns>
                     </t:Table>
-                    <!--
-                    <Table
-                        noDataText="{i18n>clarifications.without}"
-                        id="idTableAcla"
-                        items="{obtenAcla>/results}"
-                    >
-                        <headerToolbar>
-                            <Toolbar
-                                id="_IDGenToolbar"
-                                width="auto"
-                                height="46px"
-                                design="Auto"
-                                visible="true"
-                                enabled="true"
-                            >
-                                <content>
-                                    <Title
-                                        id="_IDGenTitle"
-                                        text="{i18n>clarifications.send}"
-                                        titleStyle="Auto"
-                                        width="auto"
-                                        textAlign="Begin"
-                                        visible="true"
-                                    />
-                                    <ToolbarSpacer
-                                        id="_IDGenToolbarSpacer"
-                                        width=""
-                                    />
-                                    <SearchField
-                                        id="_IDGenSearchField"
-                                        value=""
-                                        placeholder="{i18n>clarifications.search}"
-                                        showSearchButton="true"
-                                        visible="true"
-                                        width="auto"
-                                        liveChange="filtrado"
-                                    />
-                                    <Select id="selectFilter">
-                                        <items>
-                                            <core:Item id="_IDGenItem1"
-                                                key="Id"
-                                                text="{i18n>clarifications.id}"
-                                            />
-                                            <core:Item id="_IDGenItem2"
-                                                key="Documents"
-                                                text="{i18n>clarifications.numDoc}"
-                                            />
-                                            <core:Item id="_IDGenItem3"
-                                                key="DocumentType"
-                                                text="{i18n>clarifications.typeDoc}"
-                                            />
-                                            <core:Item id="_IDGenItem4"
-                                                key="Message"
-                                                text="{i18n>clarifications.textBrief}"
-                                            />
-                                            <core:Item id="_IDGenItem6"
-                                                key="Status"
-                                                text="{i18n>clarifications.status}"
-                                            />
-                                        </items>
-                                    </Select>
-                                </content>
-                                <tooltip />
-                            </Toolbar>
-                        </headerToolbar>
-                        <items>
-                            <ColumnListItem
-                                type="Active"
-                                id="item3"
-                            >
-                                <cells>
-                                    <Text
-                                        xmlns="sap.m"
-                                        id="celIdAcla"
-                                        text="{obtenAcla>Id}"
-                                    />
-                                    <Text
-                                        id="celNumDoc"
-                                        text="{obtenAcla>Documents}"
-                                    />
-                                    <Text
-                                        id="celTipoDoc"
-                                        text="{obtenAcla>DocumentType}"
-                                    />
-                                    <Text
-                                        id="celTxtBreve"
-                                        text="{obtenAcla>Message}"
-                                    />
-                                    <Text
-                                        id="celFecha"
-                                        text="{path: 'obtenAcla>Date', formatter: '.formatDate'}"
-                                    />
-                                    <Text
-                                        id="celStatus"
-                                        text="{obtenAcla>Status}"
-                                    />
-                                </cells>
-                            </ColumnListItem>
-                        </items>
-                        <columns>
-                            <Column id="column0_1551145905984">
-                                <header>
-                                    <Text
-                                        text="{i18n>clarifications.id}"
-                                        id="colIdAcla"
-                                    />
-                                </header>
-                            </Column>
-                            <Column id="column0">
-                                <header>
-                                    <Label
-                                        text="{i18n>clarifications.numDoc}"
-                                        id="colNumDoc"
-                                    />
-                                </header>
-                            </Column>
-                            <Column id="column1">
-                                <header>
-                                    <Label
-                                        text="{i18n>clarifications.typeDoc}"
-                                        id="colTipoDoc"
-                                    />
-                                </header>
-                            </Column>
-                            <Column id="column2">
-                                <header>
-                                    <Label
-                                        text="{i18n>clarifications.textBrief}"
-                                        id="colTxtBreve"
-                                    />
-                                </header>
-                            </Column>
-                            <Column id="column2_1551147417412">
-                                <header>
-                                    <Text
-                                        text="{i18n>clarifications.date}"
-                                        id="colFecha"
-                                    />
-                                </header>
-                            </Column>
-                            <Column id="column3">
-                                <header>
-                                    <Text
-                                        text="{i18n>clarifications.status}"
-                                        id="colEstatus"
-                                    />
-                                </header>
-                            </Column>
-                        </columns>
-                    </Table>
-                    -->
                 </content>
             </Page>
         </pages>

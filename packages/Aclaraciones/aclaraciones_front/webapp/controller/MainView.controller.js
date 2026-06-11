@@ -22,7 +22,6 @@ sap.ui.define([
             });
             //this.getBusinessPartner();
             this.getAclaraciones();
-            this.getNotificaciones();
         },
 
         async getAclaraciones() {
@@ -38,20 +37,6 @@ sap.ui.define([
             } catch (error) {
                 console.error(error);
                 sap.m.MessageBox.error("Error al obtener aclaraciones");
-            } finally {
-                sap.ui.core.BusyIndicator.hide();
-            }
-        },
-        async getNotificaciones() {
-            try {
-                sap.ui.core.BusyIndicator.show(0);
-                const oAction = this._oNotifiModel.bindContext("/getMyNotifications(...)");
-                await oAction.execute();
-                const aResults = oAction.getBoundContext().getObject();
-                console.log(aResults);
-            } catch (error) {
-                console.error(error);
-                sap.m.MessageBox.error("Error al obtener notificaciones");
             } finally {
                 sap.ui.core.BusyIndicator.hide();
             }
@@ -76,7 +61,54 @@ sap.ui.define([
                 return sValue;
             }
         },
+        formatLocalDate: function (sValue) {
+            if (!sValue) {
+                return "";
+            }
 
+            const [year, month, day] = sValue.split("-");
+
+            const oDate = new Date(
+                Number(year),
+                Number(month) - 1,
+                Number(day)
+            );
+
+            return oDate.toLocaleDateString("es-MX", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+            });
+        },
+        formatDocumentType: function (sType) {
+            const oBundle = this.getOwnerComponent()
+                .getModel("i18n")
+                .getResourceBundle();
+
+            const sKey = `clarifications.${sType}`;
+
+            try {
+                return oBundle.getText(sKey);
+            } catch (e) {
+                return sType;
+            }
+        },
+        formatStatusText: function (sStatus) {
+            const oBundle = this.getOwnerComponent()
+                .getModel("i18n")
+                .getResourceBundle();
+            const sKey = `clarifications.${sStatus}`;
+
+            try {
+                return oBundle.getText(sKey);
+            } catch (e) {
+                return sType;
+            }
+        },
+
+        formatStatusState: function (sStatus) {
+            return sStatus === "C" ? "Success" : "Warning";
+        },
         /*
         getBusinessPartner: function () {
             const url = "/odata/v4/invitacion/ReadSupplier";
