@@ -1,5 +1,6 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
+    "sap/ui/model/odata/v4/ODataModel",
     "sap/ui/core/Fragment",
     "sap/m/UploadCollectionParameter",
     "sap/m/PDFViewer",
@@ -7,7 +8,7 @@ sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "sap/ui/core/format/DateFormat"
-], (Controller, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox, DateFormat) => {
+], (Controller, ODataModel, Fragment, UploadCollectionParameter, PDFViewer, JSONModel, MessageToast, MessageBox, DateFormat) => {
     "use strict";
     var tipoUpload = "";
     var baulAnexos = { pdf: [], png: [], jpeg: [], msword: [], trash: [] };
@@ -19,6 +20,10 @@ sap.ui.define([
 
     return Controller.extend("pagoscalendarizadosfront.controller.main", {
         onInit() {
+            this._oAclaModel = new ODataModel({
+                serviceUrl: "/odata/v4/aclaraciones/",
+                synchronizationMode: "None"
+            });
             this._pdfViewer = new PDFViewer();
             this.getView().addDependent(this._pdfViewer);
             this.getView().addEventDelegate({
@@ -107,10 +112,25 @@ sap.ui.define([
         _oEmptyFilesMessage: null,
 
         aclaracionButton: function () {
-            this._mostrarDialogoAclaracion();
+            const oTable = this.byId("documentList");
+            const aSelectedItems = oTable.getSelectedItems();
+
+            if (aSelectedItems.length === 0) {
+                sap.m.MessageToast.show(
+                    "Debe seleccionar al menos un documento."
+                );
+                return;
+            }
+
+            const oData = aSelectedItems[0]
+                .getBindingContext("Payments")
+                .getObject();
+            console.log("Documento seleccionado:", oData);
+
+            this._mostrarDialogoAclaracion(oData);
         },
 
-        _mostrarDialogoAclaracion: function () {
+        _mostrarDialogoAclaracion: function (oData) {
             const oController = this;
 
             // Resetear archivos
@@ -205,9 +225,9 @@ sap.ui.define([
             });
 
             // Label de contacto
-            const oContactLabel = new sap.m.Label({
-                text: "Contacto: ()"
-            });
+            //const oContactLabel = new sap.m.Label({
+            //    text: "Contacto: ()"
+            //});
 
             // Mensaje cuando no hay archivos
             const oEmptyMessage = new sap.m.VBox({
@@ -251,7 +271,7 @@ sap.ui.define([
 
                             oEmptyMessage.addStyleClass("sapUiMediumMarginTopBottom"),
                             oAclaracionList.addStyleClass("sapUiSmallMarginTopBottom"),
-                            oContactLabel.addStyleClass("sapUiSmallMarginTopBottom"),
+                            //oContactLabel.addStyleClass("sapUiSmallMarginTopBottom"),
                             oCommentArea
                         ]
                     })
@@ -280,7 +300,7 @@ sap.ui.define([
                         }
 
                         // Enviar aclaración
-                        await oController._enviarAclaracion(sComment, oDialog);
+                        await oController._enviarAclaracion(sComment, oDialog, oData);
                     }
                 }),
                 endButton: new sap.m.Button({
@@ -379,19 +399,72 @@ sap.ui.define([
             return "sap-icon://document";
         },
 
-        _enviarAclaracion: async function (sComment, oDialog) {
+        _enviarAclaracion: async function (sComment, oDialog, oData) {
+            const aAttachments = [];
+
             console.log("Comentario:", sComment);
             console.log("Archivos:", this._aclaracionFiles);
+            console.log("Datos del documento:", oData);
 
-            sap.m.MessageBox.success(
-                "Función en desarrollo. Archivos listos para enviar.",
-                {
-                    title: "Información",
-                    onClose: function () {
-                        oDialog.close();
+            for (const oFileInfo of this._aclaracionFiles) {
+
+                const sBase64 = await this._fileToBase64(oFileInfo.file);
+
+                aAttachments.push({
+                    FileName: oFileInfo.name,
+                    MimeType: oFileInfo.type,
+                    Content: sBase64
+                });
+            }
+
+            try {
+
+                sap.ui.core.BusyIndicator.show(0);
+
+                const oAction = this._oAclaModel.bindContext("/SaveAclaracion(...)");
+                oAction.setParameter("Supplier", oData.Supplier);
+                oAction.setParameter("DocumentNumber", oData.SupplierInvoice);
+                oAction.setParameter("DocumentType", "FP");
+                oAction.setParameter("FiscalYear", oData.FiscalYear);
+                oAction.setParameter("CompanyCode", oData.CompanyCode);
+                oAction.setParameter("Message", sComment);
+                oAction.setParameter("Attachments", aAttachments);
+                await oAction.execute();
+
+                sap.m.MessageBox.success(
+                    "Aclaración enviada correctamente.",
+                    {
+                        title: "Éxito",
+                        onClose: function () {
+                            oDialog.close();
+                        }
                     }
-                }
-            );
+                );
+            } catch (error) {
+
+                console.error(error);
+                sap.m.MessageBox.error("Error al guardar aclaración");
+
+            } finally {
+                sap.ui.core.BusyIndicator.hide();
+            }
+        },
+        _fileToBase64: function (file) {
+            return new Promise((resolve, reject) => {
+
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+
+                    const base64 = e.target.result.split(",")[1];
+
+                    resolve(base64);
+                };
+
+                reader.onerror = reject;
+
+                reader.readAsDataURL(file);
+            });
         },
 
         uploadButton: function () {
