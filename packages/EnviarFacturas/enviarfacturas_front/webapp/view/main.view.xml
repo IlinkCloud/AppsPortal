@@ -147,8 +147,11 @@
                                     <Text text="Fecha Documento" />
                                 </Column>
                                 <Column>
-                                    <Text text="Importe" />
+                                    <Text text="Importe Pedido" />
                                 </Column>
+                                <Column>
+                                   <Text text="Importe EM" />
+                                 </Column>
                             </columns>
 
                             <items>
@@ -193,6 +196,10 @@
                                         <!-- Importe -->
                                         <ObjectNumber
                                             number="{documents>EffectiveAmount}"
+                                            unit="{documents>DocumentCurrency}"
+                                        />
+                                        <ObjectNumber
+                                            number="{documents>GoodsReceiptAmount}"
                                             unit="{documents>DocumentCurrency}"
                                         />
                                     </cells>

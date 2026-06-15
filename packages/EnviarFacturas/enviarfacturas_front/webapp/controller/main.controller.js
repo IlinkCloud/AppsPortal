@@ -519,7 +519,11 @@ sap.ui.define([
                                                             Plant: oData.Plant || data.datos.SOCIETY,
                                                             //QuantityInEntryUnit: oData.QuantityInEntryUnit || 1, costo indirecto
 
-                                                            Importe: oData.EffectiveAmount || 0,
+                                                            //Importe: oData.EffectiveAmount || 0,
+                                                            Importe: oData.GoodsReceiptAmount ?? 0,
+                                                            GoodsReceiptAmount: oData.GoodsReceiptAmount ?? 0,
+                                                            PurchaseOrderAmount: oData.EffectiveAmount ?? 0,
+                                                            PurchaseOrderUnitPrice: oData.PurchaseOrderUnitPrice ?? 0,
                                                             // === INICIO Gastos Indirectos
                                                             QuantityInEntryUnit: oData.QuantityInEntryUnit ?? 0,
                                                             EntryUnit: oData.EntryUnit || 'PC',
@@ -706,7 +710,8 @@ sap.ui.define([
 
                 const group = poGroups.get(po);
                 group.items.push(oData.PurchaseOrderItem);
-                group.totalEffectiveAmount += Number(oData.EffectiveAmount) || 0;
+                //group.totalEffectiveAmount += Number(oData.EffectiveAmount) || 0; D CSF 12062026
+                group.totalEffectiveAmount += Number(oData.GoodsReceiptAmount ?? 0) || 0; //I CSF 12062026
                 group.lines.push(oElement);
             }
 
@@ -904,7 +909,11 @@ sap.ui.define([
                         Supplier: oData.Supplier || datosCFDI.SUPPLIER,
                         Plant: oData.Plant || oData.CompanyCode,
                         //QuantityInEntryUnit: oData.QuantityInEntryUnit || 1, Costo indirecto
-                        Importe: oData.EffectiveAmount || 0,
+                        //Importe: oData.EffectiveAmount || 0,
+                        Importe: oData.GoodsReceiptAmount ?? 0,
+                        GoodsReceiptAmount: oData.GoodsReceiptAmount ?? 0,
+                        PurchaseOrderAmount: oData.EffectiveAmount ?? 0,
+                        PurchaseOrderUnitPrice: oData.PurchaseOrderUnitPrice ?? 0,
                         // === INICIO gastos indirectos
                         QuantityInEntryUnit: oData.QuantityInEntryUnit ?? 0,
                         IsDeliveryCost: oData.IsDeliveryCost,
