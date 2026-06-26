@@ -10,7 +10,7 @@
         showHeader="true"
         title="{i18n>pay.title}"
         showFooter="false"
-        showNavButton="true"
+        showNavButton="false"
         navButtonPress="onNavBack"
         class="sapUiContentPadding"
     >
