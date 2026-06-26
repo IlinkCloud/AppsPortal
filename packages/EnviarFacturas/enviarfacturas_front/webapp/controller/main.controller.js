@@ -651,7 +651,7 @@ sap.ui.define([
                                                 icon: "sap-icon://delete",
                                                 tooltip: "Eliminar",
                                                 type: "Reject",
-                                                press: () => this._eliminarFactura(datosCFDI.Comprobante?.Folio)
+                                                press: () => this._eliminarFactura()
                                             })
                                         ].filter(Boolean)
                                     })
@@ -1080,12 +1080,16 @@ sap.ui.define([
             oDialog.open();
         },
 
-        _eliminarFactura: function (folio) {
-            MessageBox.confirm(`¿Deseas eliminar la factura ${folio}?`, {
+        _eliminarFactura: function () {
+            MessageBox.confirm(`¿Deseas eliminar los documentos cargados?`, {
                 onClose: (oAction) => {
-                    if (oAction === MessageBox.Action.OK) {
-                        sap.m.MessageToast.show(`Factura ${folio} eliminada`);
+                    if (oAction !== MessageBox.Action.OK) {
+                        return;
                     }
+                    sap.m.MessageToast.show("Documentos eliminados");
+
+                    if (this._oResumenDialog) this._oResumenDialog.close();
+                    this._showUploadFileDialog(this._aSelectedForUpload);
                 }
             });
         },
