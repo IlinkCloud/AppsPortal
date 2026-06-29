@@ -157,8 +157,8 @@
                             <items>
                                 <ColumnListItem
                                     id="_IDGenColumnListItem1"
-                                    highlight="{= ${documents>isBlackListed} || ${documents>isUserBlocked} ? 'Error' : 'None' }"
-                                    type="{= ${documents>isBlackListed} || ${documents>isUserBlocked} ? 'Inactive' : 'Active' }"
+                                    highlight="{= ${documents>isBlockedForSelection} ? 'Error' : 'None' }"
+                                    type="{= ${documents>isBlockedForSelection} ? 'Inactive' : 'Active' }"
                                 >
                                     <cells>
                                         <!-- Número de Entrega -->

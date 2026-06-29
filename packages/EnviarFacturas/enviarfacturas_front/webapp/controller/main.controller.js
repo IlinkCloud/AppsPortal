@@ -275,7 +275,7 @@ sap.ui.define([
                 if (!ctx) return false;
                 const oData = ctx.getObject();
                 // Marcar como inválidos si están en Lista Negra O bloqueados manualmente
-                return oData.isBlackListed === true || oData.isUserBlocked === true;
+                return oData.isBlockedForSelection === true;
             });
 
             if (aInvalidSelection.length > 0) {
@@ -290,13 +290,11 @@ sap.ui.define([
                 );
 
                 let message = "";
-                if (hasBlackList && hasUserBlock) {
-                    message = "Hay proveedores en Lista Negra o bloqueados que no pueden ser seleccionados.";
-                } else if (hasBlackList) {
-                    message = "Este proveedor está en Lista Negra y no puede ser seleccionado.";
-                } else if (hasUserBlock) {
-                    message = "Este proveedor está bloqueado manualmente y no puede ser seleccionado.";
-                }
+                const firstBlocked = aInvalidSelection[0]
+                    .getBindingContext("documents")
+                    .getObject();
+
+                message = firstBlocked.blockReasonText || "Este proveedor no puede ser seleccionado.";
 
                 sap.m.MessageToast.show(message);
             }

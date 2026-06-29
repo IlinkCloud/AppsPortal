@@ -1,386 +1,110 @@
-<mvc:View
-    controllerName="estadodecuentafront.controller.main"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m"
-    xmlns:core="sap.ui.core"
-    displayBlock="true"
->
-    <Page
-        id="page"
-        title="{i18n>title}"
-    >
-        <content>
-            <Panel
-                xmlns:mvc="sap.ui.core.mvc"
-                xmlns:unified="sap.ui.unified"
-                xmlns:core="sap.ui.core"
-                xmlns:layout="sap.ui.commons.layout"
-                xmlns="sap.m"
-                width="auto"
-                id="PanelTotales"
-                backgroundDesign="Solid"
-                accessibleRole="Complementary"
-                expanded="true"
-                expandable="true"
-            >
-                <headerToolbar>
-                    <Toolbar id="_IDGenToolbar">
-                        <Title
-                            id="_IDGenTitle"
-                            text="Resumen general"
-                        />
-                        <ToolbarSpacer id="_IDGenToolbarSpacer1" />
-                        <Button
-                            icon="sap-icon://action"
-                            text="Consultar"
-                            type="Emphasized"
-                            id="bConsultarEC"
-                            press="establecePeriodo"
-                        />
-                    </Toolbar>
-                </headerToolbar>
-                <FlexBox
-                    xmlns:mvc="sap.ui.core.mvc"
-                    xmlns="sap.m"
-                    xmlns:unified="sap.ui.unified"
-                    xmlns:core="sap.ui.core"
-                    xmlns:layout="sap.ui.commons.layout"
-                    width="100%"
-                    id="box0"
-                >
-                    <items>
-                        <Table
-                            xmlns:mvc="sap.ui.core.mvc"
-                            xmlns="sap.m"
-                            xmlns:unified="sap.ui.unified"
-                            xmlns:core="sap.ui.core"
-                            xmlns:layout="sap.ui.commons.layout"
-                            noDataText="{appTxts>/state.noData}"
-                            id="table0_1551805599360"
-                            alternateRowColors="true"
-                            backgroundDesign="Solid"
-                        >
-                            <ColumnListItem id="_IDGenColumnListItem">
-                                <cells>
-                                    <Label
-                                        xmlns:html="http://www.w3.org/1999/xhtml"
-                                        xmlns:sap.ui.layout="sap.ui.layout"
-                                        xmlns:mvc="sap.ui.core.mvc"
-                                        xmlns="sap.m"
-                                        xmlns:unified="sap.ui.unified"
-                                        xmlns:core="sap.ui.core"
-                                        xmlns:layout="sap.ui.commons.layout"
-                                        text="Estados de cuenta al periodo:"
-                                        width="100%"
-                                        id="lPeriodo"
-                                        design="Bold"
-                                        vAlign="Middle"
-                                        textDirection="LTR"
-                                        textAlign="Left"
-                                    />
-                                    <Text
-                                        xmlns:html="http://www.w3.org/1999/xhtml"
-                                        xmlns:sap.ui.layout="sap.ui.layout"
-                                        xmlns:mvc="sap.ui.core.mvc"
-                                        width="100%"
-                                        xmlns:unified="sap.ui.unified"
-                                        xmlns:core="sap.ui.core"
-                                        xmlns:layout="sap.ui.commons.layout"
-                                        xmlns="sap.m"
-                                        id="tPeriodoIni"
-                                        textDirection="LTR"
-                                        textAlign="Right"
-                                        text="Documentos pendientes al: {totales>/fechaHoy}"
-                                    />
-                                    <Label
-                                        xmlns:html="http://www.w3.org/1999/xhtml"
-                                        xmlns:sap.ui.layout="sap.ui.layout"
-                                        xmlns:mvc="sap.ui.core.mvc"
-                                        xmlns="sap.m"
-                                        xmlns:unified="sap.ui.unified"
-                                        xmlns:core="sap.ui.core"
-                                        xmlns:layout="sap.ui.commons.layout"
-                                        text="Saldo:"
-                                        width="100%"
-                                        id="lTotFact"
-                                        design="Bold"
-                                        textDirection="LTR"
-                                        vAlign="Middle"
-                                        textAlign="Left"
-                                    />
-                                    <Text
-                                        xmlns:html="http://www.w3.org/1999/xhtml"
-                                        xmlns:sap.ui.layout="sap.ui.layout"
-                                        xmlns:mvc="sap.ui.core.mvc"
-                                        xmlns:unified="sap.ui.unified"
-                                        xmlns:core="sap.ui.core"
-                                        xmlns:layout="sap.ui.commons.layout"
-                                        xmlns="sap.m"
-                                        text="{totales>/saldo}"
-                                        textAlign="Right"
-                                        id="tTotxCob"
-                                        class="sapMObjectNumberValue saldoRojo"
-                                    />
-                                </cells>
-                            </ColumnListItem>
-                            <columns>
-                                <Column id="column0_1551805599359" />
-                                <Column id="column1_1551805599359" />
-                                <Column
-                                    xmlns:mvc="sap.ui.core.mvc"
-                                    xmlns="sap.m"
-                                    xmlns:unified="sap.ui.unified"
-                                    xmlns:core="sap.ui.core"
-                                    xmlns:layout="sap.ui.commons.layout"
-                                    id="column0_1551805599359_copy2"
-                                />
-                                <Column
-                                    xmlns:mvc="sap.ui.core.mvc"
-                                    xmlns="sap.m"
-                                    xmlns:unified="sap.ui.unified"
-                                    xmlns:core="sap.ui.core"
-                                    xmlns:layout="sap.ui.commons.layout"
-                                    id="column0_1551805599359_copy3"
-                                />
-                            </columns>
-                        </Table>
-                    </items>
-                </FlexBox>
-                <!-- Resumen General -->
-                <VBox
-                    id="_IDGenVBox"
-                    class="sapUiSmallMargin"
-                >
-                    <unified:Calendar
-                        id="calendarFiltro"
-                        visible="false"
-                        select="onCalendarSelect"
-                    />
-                    <HBox
-                        id="_IDGenHBox"
-                        justifyContent="SpaceBetween"
-                        alignItems="Start"
-                        wrap="Wrap"
-                    >
-                        <Text
-                            id="_IDGenText"
-                            text="Opciones de Selección:"
-                        />
-                    </HBox>
-                    <!-- Opciones de Selección -->
-                    <HBox
-                        id="_IDGenHBox1"
-                        class="sapUiSmallMarginTop"
-                    >
-                        <RadioButtonGroup
-                            id="_IDGenRadioButtonGroup"
-                            selectedIndex="0"
-                            class="sapUiMediumMarginBottom"
-                            columns="3"
-                            valueState="Information"
-                            select=".onRadioSelectionChange"
-                        >
-                            <buttons>
-                                <RadioButton
-                                    id="_IDGenRadioButton"
-                                    text="Pendientes"
-                                />
-                                <RadioButton
-                                    id="_IDGenRadioButton1"
-                                    text="Pagadas"
-                                />
-                                <RadioButton
-                                    id="_IDGenRadioButton2"
-                                    text="Todos"
-                                />
-                            </buttons>
-                        </RadioButtonGroup>
-                        <DateRangeSelection
-                            id="dateRange"
-                            visible="false"
-                            delimiter=" - "
-                            displayFormat="yyyy-MM-dd"
-                            change="onDateRangeChange"
-                        />
-                    </HBox>
-                </VBox>
-            </Panel>
-            <!-- Tabla Resumen de Cuentas -->
-            <Table
-                id="cuentasTable"
-                inset="false"
-                growing="true"
-                growingScrollToLoad="true"
-                items="{facturas>/facturas}"
-            >
-                <headerToolbar>
-                    <Toolbar id="_IDGenToolbar1">
-                        <Title
-                            id="_IDGenTitle1"
-                            text="Resumen de Cuentas"
-                            level="H2"
-                        />
-                        <ToolbarSpacer id="_IDGenToolbarSpacer2" />
-                        <SearchField
-                            id="_IDGenSearchField"
-                            width="20%"
-                            placeholder="Buscar..."
-                            liveChange=".onSearch"
-                        />
-                        <Select
-                            id="_IDGenSelect"
-                            change=".onSearchFieldChange"
-                        >
-                            <core:Item
-                                id="_IDGenItem1"
-                                key="IsCleared"
-                                text="Estatus"
-                            />
-                            <core:Item
-                                id="_IDGenItem2"
-                                key="AccountingDocument"
-                                text="Numero SAP"
-                            />
-                            <core:Item
-                                id="_IDGenItem3"
-                                key="SupplierInvoice"
-                                text="Factura"
-                            />
-                            <core:Item
-                                id="_IDGenItem4"
-                                key="AccountingDocumentType"
-                                text="Tipo de documento"
-                            />
-                            <core:Item
-                                id="_IDGenItem5"
-                                key="SupplierName"
-                                text="Nombre de proveedor"
-                            />
-                        </Select>
-                    </Toolbar>
-                </headerToolbar>
-                <columns>
-                    <Column
-                        id="_IDGenColumn"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText1"
-                            text="Estatus"
-                        />
-                    </Column>
-                    <Column id="_IDGenColumn1">
-                        <Text
-                            id="_IDGenText2"
-                            text="Nombre Proveedor"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn2"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText3"
-                            text="Número SAP"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn3"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText4"
-                            text="Factura"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn4"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText5"
-                            text="Tipo de Documento"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumnUUID"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenTextUUID"
-                            text="UUID"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn5"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText6"
-                            text="Fecha de Factura"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn6"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText7"
-                            text="Fecha de Recepción"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn7"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText8"
-                            text="Documento de Pago"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn8"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText9"
-                            text="Fecha de pago efectiva"
-                        />
-                    </Column>
-                    <Column
-                        id="_IDGenColumn9"
-                        hAlign="End"
-                    >
-                        <Text
-                            id="_IDGenText10"
-                            text="Total"
-                        />
-                    </Column>
-                </columns>
-                <items>
-                    <ColumnListItem id="_IDGenColumnListItem1">
-                        <cells>
-                            <ObjectStatus
-                                id="_IDGenStatus"
-                                text="{path: 'facturas>IsCleared', formatter: '.formatStatus'}"
-                                state="{path: 'facturas>IsCleared', formatter: '.formatStatusState'}"
-                            />
-                            <Text
-                                id="_IDGenText13"
-                                text="{facturas>SupplierName}"
-                            />
-                            <Link
-                                id="_IDGenLink"
-                                text="{
+<mvc:View controllerName="estadodecuentafront.controller.main" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:core="sap.ui.core" displayBlock="true">
+	<Page id="page" title="{i18n>title}">
+		<content>
+			<Panel xmlns:mvc="sap.ui.core.mvc" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" xmlns="sap.m" width="auto" id="PanelTotales" backgroundDesign="Solid" accessibleRole="Complementary" expanded="true" expandable="true">
+				<headerToolbar>
+					<Toolbar id="_IDGenToolbar">
+						<Title id="_IDGenTitle" text="Resumen general"/>
+						<ToolbarSpacer id="_IDGenToolbarSpacer1"/>
+						<Button icon="sap-icon://action" text="Consultar" type="Emphasized" id="bConsultarEC" press="establecePeriodo"/>
+					</Toolbar>
+				</headerToolbar>
+				<FlexBox xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" width="100%" id="box0">
+					<items>
+						<Table xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" noDataText="{appTxts>/state.noData}" id="table0_1551805599360" alternateRowColors="true" backgroundDesign="Solid">
+							<ColumnListItem id="_IDGenColumnListItem">
+								<cells>
+									<Label xmlns:html="http://www.w3.org/1999/xhtml" xmlns:sap.ui.layout="sap.ui.layout" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" text="Estados de cuenta al periodo:" width="100%" id="lPeriodo" design="Bold" vAlign="Middle" textDirection="LTR" textAlign="Left"/>
+									<Text xmlns:html="http://www.w3.org/1999/xhtml" xmlns:sap.ui.layout="sap.ui.layout" xmlns:mvc="sap.ui.core.mvc" width="100%" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" xmlns="sap.m" id="tPeriodoIni" textDirection="LTR" textAlign="Right" text="Documentos pendientes al: {totales>/fechaHoy}"/>
+									<Label xmlns:html="http://www.w3.org/1999/xhtml" xmlns:sap.ui.layout="sap.ui.layout" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" text="Saldo:" width="100%" id="lTotFact" design="Bold" textDirection="LTR" vAlign="Middle" textAlign="Left"/>
+									<Text xmlns:html="http://www.w3.org/1999/xhtml" xmlns:sap.ui.layout="sap.ui.layout" xmlns:mvc="sap.ui.core.mvc" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" xmlns="sap.m" text="{totales>/saldo}" textAlign="Right" id="tTotxCob" class="sapMObjectNumberValue saldoRojo"/>
+								</cells>
+							</ColumnListItem>
+							<columns>
+								<Column id="column0_1551805599359"/>
+								<Column id="column1_1551805599359"/>
+								<Column xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" id="column0_1551805599359_copy2"/>
+								<Column xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:unified="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.commons.layout" id="column0_1551805599359_copy3"/>
+							</columns>
+						</Table>
+					</items>
+				</FlexBox>
+				<!-- Resumen General -->
+				<VBox id="_IDGenVBox" class="sapUiSmallMargin">
+					<unified:Calendar id="calendarFiltro" visible="false" select="onCalendarSelect"/>
+					<HBox id="_IDGenHBox" justifyContent="SpaceBetween" alignItems="Start" wrap="Wrap">
+						<Text id="_IDGenText" text="Opciones de Selección:"/>
+					</HBox>
+					<!-- Opciones de Selección -->
+					<HBox id="_IDGenHBox1" class="sapUiSmallMarginTop">
+						<RadioButtonGroup id="_IDGenRadioButtonGroup" selectedIndex="0" class="sapUiMediumMarginBottom" columns="3" valueState="Information" select=".onRadioSelectionChange">
+							<buttons>
+								<RadioButton id="_IDGenRadioButton" text="Pendientes"/>
+								<RadioButton id="_IDGenRadioButton1" text="Pagadas"/>
+								<RadioButton id="_IDGenRadioButton2" text="Todos"/>
+							</buttons>
+						</RadioButtonGroup>
+						<DateRangeSelection id="dateRange" visible="false" delimiter=" - " displayFormat="yyyy-MM-dd" change="onDateRangeChange"/>
+					</HBox>
+				</VBox>
+			</Panel>
+			<!-- Tabla Resumen de Cuentas -->
+			<Table id="cuentasTable" inset="false" growing="true" growingScrollToLoad="true" items="{facturas>/facturas}">
+				<headerToolbar>
+					<Toolbar id="_IDGenToolbar1">
+						<Title id="_IDGenTitle1" text="Resumen de Cuentas" level="H2"/>
+						<ToolbarSpacer id="_IDGenToolbarSpacer2"/>
+						<SearchField id="_IDGenSearchField" width="20%" placeholder="Buscar..." liveChange=".onSearch"/>
+						<Select id="_IDGenSelect" change=".onSearchFieldChange">
+							<core:Item id="_IDGenItem1" key="IsCleared" text="Estatus"/>
+							<core:Item id="_IDGenItem2" key="AccountingDocument" text="Numero SAP"/>
+							<core:Item id="_IDGenItem3" key="SupplierInvoice" text="Factura"/>
+							<core:Item id="_IDGenItem4" key="AccountingDocumentType" text="Tipo de documento"/>
+							<core:Item id="_IDGenItem5" key="SupplierName" text="Nombre de proveedor"/>
+						</Select>
+					</Toolbar>
+				</headerToolbar>
+				<columns>
+					<Column id="_IDGenColumn" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText1" text="Estatus"/>
+					</Column>
+					<Column id="_IDGenColumn1">
+						<Text id="_IDGenText2" text="Nombre Proveedor"/>
+					</Column>
+					<Column id="_IDGenColumn2" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText3" text="Número SAP"/>
+					</Column>
+					<Column id="_IDGenColumn3" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText4" text="Factura"/>
+					</Column>
+					<Column id="_IDGenColumn4" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText5" text="Tipo de Documento"/>
+					</Column>
+					<Column id="_IDGenColumnUUID" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenTextUUID" text="UUID"/>
+					</Column>
+					<Column id="_IDGenColumn5" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText6" text="Fecha de Factura"/>
+					</Column>
+					<Column id="_IDGenColumn6" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText7" text="Fecha de Recepción"/>
+					</Column>
+					<Column id="_IDGenColumn7" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText8" text="Documento de Pago"/>
+					</Column>
+					<Column id="_IDGenColumn8" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenText9" text="Fecha de pago efectiva"/>
+					</Column>
+					<Column id="_IDGenColumn9" hAlign="End">
+						<Text id="_IDGenText10" text="Total"/>
+					</Column>
+				</columns>
+				<items>
+					<ColumnListItem id="_IDGenColumnListItem1">
+						<cells>
+							<ObjectStatus id="_IDGenStatus" text="{path: 'facturas>IsCleared', formatter: '.formatStatus'}" state="{path: 'facturas>IsCleared', formatter: '.formatStatusState'}"/>
+							<Text id="_IDGenText13" text="{facturas>SupplierName}"/>
+							<Link id="_IDGenLink" text="{
 parts: [
 {path: 'facturas>IsCleared'},
 {path: 'facturas>SupplierInvoice'},
@@ -388,62 +112,31 @@ parts: [
 {path: 'facturas>DocumentType'}
 ],
 formatter: '.formatNumeroSAP'
-}"
-                                press=".onSapNumberPress"
-                            />
-                            <Text
-                                id="_IDGenText15"
-                                text="{
+}" press=".onSapNumberPress"/>
+							<Text id="_IDGenText15" text="{
 parts: [
 {path: 'facturas>SupplierInvoice'},
 {path: 'facturas>DocumentType'}
 ],
 formatter: '.formatFacturaDisplay'
-}"
-                            />
-                            <Text
-                                id="_IDGenText16"
-                                text="{
+}"/>
+							<Text id="_IDGenText16" text="{
 parts: [
-{path: 'facturas>IsCleared'},
-{path: 'facturas>AccountingDocumentType'},
-{path: 'facturas>DocumentType'}
+{path: 'facturas>DocumentType'},
+{path: 'facturas>TipoDocumento'}
 ],
-formatter: '.formatTipoDocumentoPorEstatus'
-}"
-                            />
-                            <Text
-                                id="_IDGenTextUUIDCell"
-                                text="{facturas>UUID}"
-                                wrapping="false"
-                                tooltip="{facturas>UUID}"
-                            />
-                            <Text
-                                id="_IDGenText17"
-                                text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"
-                            />
-                            <Text
-                                id="_IDGenText18"
-                                text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"
-                            />
-                            <Text
-                                id="_IDGenText19"
-                                text="{facturas>ClearingAccountingDocument}"
-                            />
-                            <Text
-                                id="_IDGenText20"
-                                text="{path: 'facturas>ClearingDate', formatter: '.formatDateSimple'}"
-                            />
-                            <ObjectNumber
-                                id="_IDGenObjectNumber"
-                                number="{= ${facturas>AmountInTransactionCurrency} || ${facturas>SupplierInvoiceItemAmount} || 0 }"
-                                unit="{facturas>TransactionCurrency}"
-                                emphasized="true"
-                            />
-                        </cells>
-                    </ColumnListItem>
-                </items>
-            </Table>
-        </content>
-    </Page>
+formatter: '.formatTipoDocumento'
+}"/>
+							<Text id="_IDGenTextUUIDCell" text="{facturas>UUID}" wrapping="false" tooltip="{facturas>UUID}"/>
+							<Text id="_IDGenText17" text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"/>
+							<Text id="_IDGenText18" text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"/>
+							<Text id="_IDGenText19" text="{facturas>ClearingAccountingDocument}"/>
+							<Text id="_IDGenText20" text="{path: 'facturas>ClearingDate', formatter: '.formatDateSimple'}"/>
+							<ObjectNumber id="_IDGenObjectNumber" number="{= ${facturas>AmountInTransactionCurrency} || ${facturas>SupplierInvoiceItemAmount} || 0 }" unit="{facturas>TransactionCurrency}" emphasized="true"/>
+						</cells>
+					</ColumnListItem>
+				</items>
+			</Table>
+		</content>
+	</Page>
 </mvc:View>
