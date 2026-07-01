@@ -873,16 +873,16 @@ sap.ui.define([
             }
         },
 
-        _subirAFI: async function (datosCFDI, pdfFile, xmlFile) {
+        _subirAFI: async function (datosCFDI, pdfFile, xmlFile, sInvoiceStatus = "5") {
             const oTable = this.getView().byId("docMatList");
             const aSelected = oTable.getSelectedItems();
-            const nMinTolerance = 150;
-            const nMaxTolerance = 150;
-            let sInvoiceStatus = "5";
+            //const nMinTolerance = 150;
+            //const nMaxTolerance = 150;
+            //let sInvoiceStatus = "5";
 
             // === Validar tolerancia (ahora agrupa por PO automáticamente) ===
-            const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
-
+            //const aDeviations = await this._validateToleranceWithTax(aSelected, datosCFDI);
+            /*
             if (aDeviations.length > 0) {
                 const sResponse = await this._getDeviationConfirmation(aDeviations, nMaxTolerance, nMinTolerance);
                 if (sResponse === "Cancelar") {
@@ -891,6 +891,7 @@ sap.ui.define([
                     sInvoiceStatus = "A";
                 }
             }
+            */
 
             BusyIndicator.show(100);
 
@@ -982,9 +983,23 @@ sap.ui.define([
 
                 if (!res.ok) {
                     const errText = await res.text();
-                    const userMessage = this._formatErrorMessage(errText, datosCFDI.CURRENCY);
-                    sap.m.MessageBox.warning(userMessage);
+                    //const userMessage = this._formatErrorMessage(errText, datosCFDI.CURRENCY);
+                    const error = this._formatErrorMessage(errText, datosCFDI.CURRENCY);
                     BusyIndicator.hide();
+                    if (typeof error === "object" && error.type === "AMOUNT_DIFFERENCE" && sInvoiceStatus !== "A") {
+                        const action = await this._showDeviationDialog(
+                            error.difference,
+                            datosCFDI.CURRENCY
+                        );
+
+                        if (action === "Enviar") {
+                            return this._subirAFI(datosCFDI, pdfFile, xmlFile, "A");
+                        }
+
+                        // Canceló
+                        return;
+                    }
+                    sap.m.MessageBox.warning(error || error.message);
                     return;
                 }
 
@@ -1224,16 +1239,23 @@ sap.ui.define([
             // === 2. NUEVO: Diferencia de montos ===
             const montoDiffMatch = cleanText.match(/Diferencia de montos:\s*([\d.,]+)/);
             if (montoDiffMatch) {
+                return {
+                    type: "AMOUNT_DIFFERENCE",
+                    difference: montoDiffMatch[1],
+                    message: cleanText
+                };
+                /*
                 const montoDiferencia = montoDiffMatch[1];
                 return `Diferencia de Montos Detectada\n\n` +
                     `La suma de los importes seleccionados (${currency} ${montoDiferencia}) ` +
-                    `no coincide con el subtotal de la nota de crédito.\n\n` +
+                    `no coincide con el subtotal de la factura.\n\n` +
                     `Posibles causas:\n` +
                     `• Seleccionaste posiciones de pedido con montos diferentes a la nota\n` +
-                    `• La nota de crédito tiene un monto incorrecto\n\n` +
+                    `• La factura tiene un monto incorrecto\n\n` +
                     `Recomendación:\n` +
                     `Verifica que los documentos seleccionados en la tabla correspondan ` +
-                    `exactamente al monto total de la nota de crédito.`;
+                    `exactamente al monto total de la factura.`;
+                */
             }
 
             // === 3. Duplicado de documento contable ===
@@ -1241,7 +1263,7 @@ sap.ui.define([
             if (duplicateMatch) {
                 const accDoc = duplicateMatch[1];
                 const year = duplicateMatch[2];
-                return `Ya existe una nota contabilizada para este documento de referencia.\n` +
+                return `Ya existe una factura contabilizada para este documento de referencia.\n` +
                     `Documento contable existente: ${accDoc} (${year})\n\n` +
                     `Posibles causas:\n` +
                     `• Esta posición de pedido ya fue facturada previamente\n` +
@@ -1256,18 +1278,25 @@ sap.ui.define([
                 const montoRet = cleanText.match(/\(\$([\d.,]+)\)/)?.[1] || "N/A";
                 const montoItems = cleanText.match(/ítems \(\$([\d.,]+)\)/)?.[1] || "N/A";
                 return "Retenciones Exceden el Monto\n\n" +
-                    "El monto de retención configurado excede el valor de la nota de crédito.\n\n" +
+                    "El monto de retención configurado excede el valor de la factura.\n\n" +
                     `• Monto de retenciones: $${montoRet}\n` +
                     `• Monto de ítems seleccionados: $${montoItems}\n\n` +
                     `Contacte al equipo de finanzas para revisar la configuración.`;
             }
 
             // === 5. Balance contable ===
-            const balanceMatch = cleanText.match(/Balance not zero.*?debits:\s([\d.,]+)\s+credits:\s([\d.,]+)/);
+            //const balanceMatch = cleanText.match(/Balance not zero.*?debits:\s([\d.,]+)\s+credits:\s([\d.,]+)/);
+            const balanceMatch = cleanText.match(/(?:Balance not zero|Saldo distinto de cero).*?(?:debits:|Debe:)\s*([\d.,]+).*?(?:credits:|Haber:)\s*([\d.,]+)/i);
             if (balanceMatch) {
                 const debits = parseFloat(balanceMatch[1].replace(/,/g, ""));
                 const credits = parseFloat(balanceMatch[2].replace(/,/g, ""));
                 const diff = (debits - credits).toFixed(2);
+                return {
+                    type: "AMOUNT_DIFFERENCE",
+                    difference: diff,
+                    message: cleanText
+                };
+
                 return `El balance contable no cuadra.\n\n` +
                     `Débitos: ${debits.toLocaleString("es-MX")} ${currency}\n` +
                     `Créditos: ${credits.toLocaleString("es-MX")} ${currency}\n` +
@@ -1280,9 +1309,9 @@ sap.ui.define([
             if (duplicateMatch) {
                 const invoiceNumber = duplicateMatch[1];
                 const year = duplicateMatch[2];
-                return `La nota no se creó automáticamente porque ya existe un posible duplicado.\n\n` +
-                    `Nota existente: ${invoiceNumber} (${year}).\n\n` +
-                    `Verifique si ya procesó esta nota de crédito anteriormente.`;
+                return `La factura no se creó automáticamente porque ya existe un posible duplicado.\n\n` +
+                    `Factura existente: ${invoiceNumber} (${year}).\n\n` +
+                    `Verifique si ya procesó esta factura anteriormente.`;
             }
 
             // === 7. TaxCode faltante ===
@@ -1302,7 +1331,7 @@ sap.ui.define([
             }
 
             // === 9. Otros errores - mensaje genérico pero limpio ===
-            return `Error al registrar la nota de crédito\n\n` +
+            return `Error al registrar la factura\n\n` +
                 `Detalles: ${cleanText}\n\n` +
                 `Si el problema persiste, contacte al área de soporte.`;
         },
@@ -1696,6 +1725,58 @@ sap.ui.define([
                 reader.readAsDataURL(file);
             });
         },
+        _showDeviationDialog: function (difference, currency) {
+            return new Promise((resolve) => {
+                const sMessage =
+                    `La suma de los importes seleccionados no coincide con el subtotal de la factura.\n\n` +
+                    `Diferencia: ${currency} ${difference}\n\n` +
+                    `¿Deseas registrar la factura con esta desviación?`;
 
+                const oDialog = new Dialog({
+                    type: "Message",
+                    title: "Diferencia de montos",
+                    content: new sap.m.VBox({
+                        width: "100%",
+                        items: [
+                            new sap.m.MessageStrip({
+                                text: "Se detectó una diferencia entre el subtotal de la factura y los importes seleccionados.",
+                                type: "Warning",
+                                showIcon: true,
+                                showCloseButton: false
+                            }).addStyleClass("sapUiSmallMarginBottom"),
+
+                            new Text({
+                                text:
+                                    `Diferencia: ${currency} ${difference}\n\n` +
+                                    `Si continúas, la factura se registrará como preliminar.\n\n` +
+                                    `¿Deseas continuar?`
+                            })
+                        ]
+                    }),
+
+                    beginButton: new Button({
+                        type: "Emphasized",
+                        text: "Enviar con desviación",
+                        press: function () {
+                            resolve("Enviar");
+                            oDialog.close();
+                        }
+                    }),
+
+                    endButton: new Button({
+                        text: "Cargar otra factura",
+                        press: function () {
+                            resolve("Cancelar");
+                            oDialog.close();
+                        }
+                    }),
+
+                    afterClose: function () {
+                        oDialog.destroy();
+                    }
+                });
+                oDialog.open();
+            });
+        }
     });
 });
