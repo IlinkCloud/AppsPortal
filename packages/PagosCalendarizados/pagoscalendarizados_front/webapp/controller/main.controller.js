@@ -35,6 +35,9 @@ sap.ui.define([
 
         ////////////////////// FETCH FACTURAS
         getFacturasenRevision: function () {
+
+            sap.ui.core.BusyIndicator.show(0);
+
             fetch("/odata/v4/schedule-payments/Payments?$top=1000", {
                 method: "GET",
                 headers: { "Accept": "application/json" },
@@ -53,7 +56,12 @@ sap.ui.define([
                     oODataJSONModel.setData(data.value || []);
                     this.getOwnerComponent().setModel(oODataJSONModel, "Payments");
                 })
-                .catch(error => console.error("Error:", error));
+                .catch(error => {
+                    console.error("Error:", error)
+                })
+                .finally(() => {
+                    sap.ui.core.BusyIndicator.hide();
+                });;
         },
 
         ////////////////////// FORMATO DE FECHAS
