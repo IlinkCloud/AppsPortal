@@ -38,6 +38,7 @@ sap.ui.define([
           this.FechaIni = desde;
           this.FechaFin = hoy;
           this.getStatements(fnFormat(desde), fnFormat(hoy));
+          this._aplicarColumnasPorModo(0);
         }
       });
     },
@@ -74,7 +75,9 @@ sap.ui.define([
         .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`HTTP ${r.status} - ${t}`); }))
         .then(data => {
           console.log("Respuesta API facturas:", data);
-          this.oODataJSONModel.setData({ facturas: data.value || [] });
+          this._aTodasFacturas = data.value || [];
+
+          this.oODataJSONModel.setData({ facturas: [] });
           this.getOwnerComponent().setModel(this.oODataJSONModel, "facturas");
           const hoy = new Date();
           const fechaHoy = hoy.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -96,8 +99,15 @@ sap.ui.define([
             saldo: saldoTexto,
             moneda: ""
           });
+
           const oTable = this.byId("cuentasTable");
+
+          this.byId("_IDGenRadioButtonGroup").setSelectedIndex(0);
+          this._aplicarColumnasPorModo(0);
+          this._aplicarFiltroPorModo(0);
+
           const oBinding = oTable.getBinding("items");
+
           if (oBinding) {
             const oSorter = new Sorter("IsCleared", false, function (oContext) {
               return {
@@ -128,25 +138,43 @@ sap.ui.define([
     },
 
     //  ACTUALIZADO: Controla el Número SAP según si es Factura o Pago
-    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc, docType) {
-      // Si es la fila de Factura (RE), mostrar el número de factura
-      if (docType === 'RE') {
+    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc, docType, accountingDocument) {
+      if (docType === "NC") {
+        return accountingDocument || "";
+      }
+
+      if (docType === "RE") {
         return supplierInvoice || "";
       }
-      // Si es la fila de Pago (KZ/ZP), mostrar el documento de pago
-      else {
-        return clearingDoc || "";
-      }
+
+      return clearingDoc || accountingDocument || "";
     },
 
     //  NUEVO: Controla la columna "Factura"
     formatFacturaDisplay: function (supplierInvoice, docType) {
-      // Si es la fila de Factura (RE), dejar vacío
-      if (docType === 'RE') {
+      if (docType === "RE") {
         return "";
       }
-      // Si es la fila de Pago, mostrar la factura a la que corresponde
+
       return supplierInvoice || "";
+    },
+
+    _aplicarColumnasPorModo: function (selectedIndex) {
+      const bTodos = selectedIndex === 2;
+      const bPagadas = selectedIndex === 1;
+
+      const bMostrarEstatus = bTodos;
+      const bMostrarDatosPago = bPagadas || bTodos;
+
+      this.byId("_IDGenColumn").setVisible(bMostrarEstatus);
+      this.byId("_IDGenColumn6").setVisible(bMostrarDatosPago);
+      this.byId("_IDGenColumn7").setVisible(bMostrarDatosPago);
+      this.byId("_IDGenColumn8").setVisible(bMostrarDatosPago);
+
+      this.byId("_IDGenStatus").setVisible(bMostrarEstatus);
+      this.byId("_IDGenText18").setVisible(bMostrarDatosPago);
+      this.byId("_IDGenText19").setVisible(bMostrarDatosPago);
+      this.byId("_IDGenText20").setVisible(bMostrarDatosPago);
     },
 
     formatTipoDocumentoPorEstatus: function (bCleared, tipo, documentType, tipoTexto) {
@@ -160,42 +188,60 @@ sap.ui.define([
       return "FACTURA";
     },
 
-    onRadioSelectionChange: function (oEvent) {
-      const selectedIndex = oEvent.getParameter("selectedIndex");
-      const oTable = this.byId("cuentasTable");
-      const oBinding = oTable.getBinding("items");
-      const oDateRange = this.byId("dateRange");
-      if (!oBinding) return;
-      let aFilters = [];
+    _aplicarFiltroPorModo: function (selectedIndex) {
+      const aTodas = this._aTodasFacturas || [];
+      let aFiltradas = [];
+
       switch (selectedIndex) {
         case 0: // Pendientes
-          aFilters.push(new Filter("IsCleared", FilterOperator.EQ, false));
-          oBinding.filter(aFilters);
-          oDateRange.setVisible(false);
+          aFiltradas = aTodas.filter(f =>
+            f.IsCleared === false &&
+            f.DocumentType === "RE"
+          );
           break;
-        case 1: // Pagadas
-          aFilters.push(new Filter("IsCleared", FilterOperator.EQ, true));
-          oBinding.filter(aFilters);
-          oDateRange.setVisible(false);
+
+        case 1: // Pagadas: pagos + notas de crédito
+          aFiltradas = aTodas.filter(f =>
+            f.IsCleared === true ||
+            f.DocumentType === "NC"
+          );
           break;
+
         case 2: // Todos
-          oBinding.filter([]);
-          oDateRange.setVisible(true);
+          aFiltradas = aTodas;
           break;
       }
+
+      this.oODataJSONModel.setData({ facturas: aFiltradas });
+    },
+
+    onRadioSelectionChange: function (oEvent) {
+      const selectedIndex = oEvent.getParameter("selectedIndex");
+      const oDateRange = this.byId("dateRange");
+
+      this._aplicarColumnasPorModo(selectedIndex);
+      this._aplicarFiltroPorModo(selectedIndex);
+
+      oDateRange.setVisible(false);
     },
 
     onSearch: function (oEvent) {
       const sQuery = oEvent.getParameter("newValue") || oEvent.getSource().getValue();
       const sKey = this.byId("_IDGenSelect").getSelectedKey();
-      const oTable = this.byId("cuentasTable");
-      const oBinding = oTable.getBinding("items");
-      if (!oBinding) return;
-      let aFilters = [];
-      if (sQuery) {
-        aFilters.push(new Filter(sKey, FilterOperator.Contains, sQuery));
-      }
-      oBinding.filter(aFilters);
+      const selectedIndex = this.byId("_IDGenRadioButtonGroup").getSelectedIndex();
+
+      this._aplicarFiltroPorModo(selectedIndex);
+
+      if (!sQuery) return;
+
+      const aActuales = this.oODataJSONModel.getProperty("/facturas") || [];
+
+      const aFiltradas = aActuales.filter(f => {
+        const v = String(f[sKey] ?? "").toLowerCase();
+        return v.includes(String(sQuery).toLowerCase());
+      });
+
+      this.oODataJSONModel.setData({ facturas: aFiltradas });
     },
 
     /*
