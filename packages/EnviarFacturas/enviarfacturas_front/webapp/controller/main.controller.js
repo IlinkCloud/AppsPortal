@@ -519,6 +519,7 @@ sap.ui.define([
 
                                                             //Importe: oData.EffectiveAmount || 0,
                                                             Importe: oData.GoodsReceiptAmount ?? 0,
+                                                            NetAmount: oData.NetAmount ?? 0,
                                                             GoodsReceiptAmount: oData.GoodsReceiptAmount ?? 0,
                                                             PurchaseOrderAmount: oData.EffectiveAmount ?? 0,
                                                             PurchaseOrderUnitPrice: oData.PurchaseOrderUnitPrice ?? 0,
@@ -909,6 +910,7 @@ sap.ui.define([
                         Plant: oData.Plant || oData.CompanyCode,
                         //QuantityInEntryUnit: oData.QuantityInEntryUnit || 1, Costo indirecto
                         //Importe: oData.EffectiveAmount || 0,
+                        NetAmount: oData.NetAmount ?? 0,
                         Importe: oData.GoodsReceiptAmount ?? 0,
                         GoodsReceiptAmount: oData.GoodsReceiptAmount ?? 0,
                         PurchaseOrderAmount: oData.EffectiveAmount ?? 0,
