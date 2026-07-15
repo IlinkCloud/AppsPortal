@@ -433,7 +433,8 @@ sap.ui.define([
                                                             Supplier: oData.Supplier || data.datos.SUPPLIER,
                                                             Plant: oData.Plant || data.datos.SOCIETY,
                                                             QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
-                                                            Importe: oData.EffectiveAmount || 0
+                                                            Importe: oData.EffectiveAmount || 0,
+                                                            NetAmount: oData.NetAmount ?? 0,
                                                         };
                                                     });
 
@@ -769,7 +770,8 @@ sap.ui.define([
                         Supplier: oData.Supplier || datosCFDI.SUPPLIER,
                         Plant: oData.Plant || oData.CompanyCode,
                         QuantityInEntryUnit: oData.QuantityInEntryUnit || 1,
-                        Importe: oData.EffectiveAmount || 0
+                        Importe: oData.EffectiveAmount || 0,
+                        NetAmount: oData.NetAmount ?? 0,
                     };
                 });
 
