@@ -100,23 +100,11 @@ sap.ui.define([
             moneda: ""
           });
 
-          const oTable = this.byId("cuentasTable");
 
           this.byId("_IDGenRadioButtonGroup").setSelectedIndex(0);
           this._aplicarColumnasPorModo(0);
           this._aplicarFiltroPorModo(0);
-
-          const oBinding = oTable.getBinding("items");
-
-          if (oBinding) {
-            const oSorter = new Sorter("IsCleared", false, function (oContext) {
-              return {
-                key: oContext.getProperty("IsCleared"),
-                text: oContext.getProperty("IsCleared") ? "Pagadas" : "Pendientes"
-              };
-            });
-            oBinding.sort(oSorter);
-          }
+          this._aplicarAgrupacionPorModo();
         })
         .catch(error => console.error("Error:", error))
         .finally(() => {
@@ -133,7 +121,11 @@ sap.ui.define([
       this.getStatements(fnFormat(dFrom), fnFormat(dTo));
     },
 
-    formatStatus: function (bCleared) {
+    formatStatus: function (bCleared, sDocumentType) {
+      if (sDocumentType === "NC") {
+        return "Registrada";
+      }
+
       return bCleared ? "Pagada" : "Pendiente";
     },
 
@@ -194,33 +186,97 @@ sap.ui.define([
 
       switch (selectedIndex) {
         case 0: // Pendientes
-          aFiltradas = aTodas.filter(f =>
-            f.IsCleared === false &&
-            f.DocumentType === "RE"
-          );
+          aFiltradas = aTodas
+            .filter(f =>
+              f.IsCleared === false &&
+              f.DocumentType === "RE"
+            )
+            .map(f => ({
+              ...f,
+              _GroupOrder: 1,
+              _GroupText: "Pendientes"
+            }));
           break;
 
         case 1: // Pagadas: pagos + notas de crédito
-          aFiltradas = aTodas.filter(f =>
-            f.IsCleared === true ||
-            f.DocumentType === "NC"
-          );
+          aFiltradas = aTodas
+            .filter(f =>
+              f.IsCleared === true ||
+              f.DocumentType === "NC"
+            )
+            .map(f => {
+              const bNotaCredito = f.DocumentType === "NC";
+
+              return {
+                ...f,
+                _GroupOrder: bNotaCredito ? 1 : 2,
+                _GroupText: bNotaCredito
+                  ? "Registradas"
+                  : "Pagadas"
+              };
+            });
           break;
 
         case 2: // Todos
-          aFiltradas = aTodas;
+          aFiltradas = aTodas.map(f => {
+            if (f.DocumentType === "NC") {
+              return {
+                ...f,
+                _GroupOrder: 2,
+                _GroupText: "Registradas"
+              };
+            }
+
+            if (f.IsCleared === true) {
+              return {
+                ...f,
+                _GroupOrder: 3,
+                _GroupText: "Pagadas"
+              };
+            }
+
+            return {
+              ...f,
+              _GroupOrder: 1,
+              _GroupText: "Pendientes"
+            };
+          });
           break;
       }
 
-      this.oODataJSONModel.setData({ facturas: aFiltradas });
+      this.oODataJSONModel.setData({
+        facturas: aFiltradas
+      });
     },
 
+    _aplicarAgrupacionPorModo: function () {
+      const oBinding = this.byId("cuentasTable").getBinding("items");
+
+      if (!oBinding) {
+        return;
+      }
+
+      const oSorter = new Sorter(
+        "_GroupOrder",
+        false,
+        function (oContext) {
+          return {
+            key: oContext.getProperty("_GroupOrder"),
+            text: oContext.getProperty("_GroupText")
+          };
+        }
+      );
+
+      oBinding.sort([]);
+      oBinding.sort(oSorter);
+    },
     onRadioSelectionChange: function (oEvent) {
       const selectedIndex = oEvent.getParameter("selectedIndex");
       const oDateRange = this.byId("dateRange");
 
       this._aplicarColumnasPorModo(selectedIndex);
       this._aplicarFiltroPorModo(selectedIndex);
+      this._aplicarAgrupacionPorModo();
 
       oDateRange.setVisible(false);
     },
