@@ -22,6 +22,19 @@ sap.ui.define([
             });
             //this.getBusinessPartner();
             this.getAclaraciones();
+
+            // Documentos adjuntos
+            const oSystemDocumentsModel = new ODataModel({
+                serviceUrl: "/odata/v4/system-documents/",
+                synchronizationMode: "None",
+                operationMode: "Server"
+            });
+
+            this.getView().setModel(oSystemDocumentsModel, "systemDocuments");
+
+            this._oDocumentsMenu = new sap.m.Menu();
+            this.byId("btnPortalDocuments").setMenu(this._oDocumentsMenu);
+            this._loadDocumentsMenu();
         },
 
         async getAclaraciones() {
@@ -105,46 +118,87 @@ sap.ui.define([
                 return sType;
             }
         },
-
         formatStatusState: function (sStatus) {
             return sStatus === "C" ? "Success" : "Warning";
         },
-        /*
-        getBusinessPartner: function () {
-            const url = "/odata/v4/invitacion/ReadSupplier";
-            console.log("[getBusinessPartner] URL:", url);
-        
-            fetch(url, { method: "GET", headers: { "Accept": "application/json" }, credentials: "include" })
-                .then(res => {
-                    console.log("[getBusinessPartner] Respuesta:", res.status, res.statusText);
-                    return res.ok ? res.json() : res.text().then(t => { throw new Error(t); });
-                })
-                .then(data => {
-                    console.log("[getBusinessPartner] Datos crudos:", data);
-                    const aContactos = (data.value || []).map(bp => ({
-                        UserID: bp.BusinessPartner,
-                        UserNombre: bp.SupplierName,
-                    }));
-                    console.table(aContactos);
-                    this.getView().getModel().setProperty("/UsrsDatos", aContactos);
-                })
-                .catch(err => console.error("[getBusinessPartner] Error:", err));
+        _getAvailableDocuments: async function () {
+            const oModel = this.getView().getModel("systemDocuments");
+            const oOperation = oModel.bindContext("/GetSystemDocuments(...)");
+
+            await oOperation.execute();
+
+            const aDocuments = oOperation.getBoundContext().getObject().value ?? [];
+            return aDocuments.filter(doc => !!doc.FileName);
         },
-        */
-        /*
-        filtrado: function (oEvent) {
-            const sQuery = oEvent.getParameter("newValue");
-            const sKey = this.byId("selectFilter").getSelectedKey();
-
-            const oTable = this.byId("idTableAcla");
-            const oBinding = oTable.getBinding("items");
-
-            let aFilters = [];
-            if (sQuery && sKey) {
-                aFilters.push(new sap.ui.model.Filter(sKey, sap.ui.model.FilterOperator.Contains, sQuery));
+        _buildDocumentsMenu: function (aDocuments) {
+            this._oDocumentsMenu.destroyItems();
+            aDocuments.forEach(doc => {
+                this._oDocumentsMenu.addItem(
+                    new sap.m.MenuItem({
+                        text: doc.DocumentName,
+                        icon: this._getDocumentIcon(doc.DocumentType),
+                        press: () => this._viewDocument(doc)
+                    })
+                );
+            });
+        },
+        _getDocumentIcon: function (documentType) {
+            switch (documentType) {
+                case "HELP_MANUAL":
+                    return "sap-icon://education";
+                case "PRIVACY_NOTICE":
+                    return "sap-icon://shield";
+                default:
+                    return "sap-icon://document";
             }
-            oBinding.filter(aFilters);
         },
-        */
+        _viewDocument: async function (oDocument) {
+
+            try {
+                const oModel = this.getView().getModel("systemDocuments");
+                const oOperation = oModel.bindContext("/GetDocumentContent(...)");
+
+                oOperation.setParameter(
+                    "documentType",
+                    oDocument.DocumentType
+                );
+
+                await oOperation.execute();
+
+                const sBase64 = oOperation.getBoundContext().getObject().value;
+
+                if (!sBase64) {
+                    MessageBox.error("No fue posible obtener el documento.");
+                    return;
+                }
+                this._openPdf(sBase64);
+            } catch (err) {
+                MessageBox.error(err.message || "Ocurrió un error al obtener el documento.");
+            }
+
+        },
+        _openPdf: function (sBase64) {
+            const sBinary = atob(sBase64);
+            const aBytes = new Uint8Array(sBinary.length);
+            for (let i = 0; i < sBinary.length; i++) {
+                aBytes[i] = sBinary.charCodeAt(i);
+            }
+            const oBlob = new Blob([aBytes], {
+                type: "application/pdf"
+            });
+            const sUrl = URL.createObjectURL(oBlob);
+            window.open(sUrl, "_blank");
+            setTimeout(() => URL.revokeObjectURL(sUrl), 1000);
+        },
+        _loadDocumentsMenu: async function () {
+            try {
+
+                const aDocuments = await this._getAvailableDocuments();
+                this._buildDocumentsMenu(aDocuments);
+
+            } catch (err) {
+                console.error(err);
+            }
+        },
     });
 });
