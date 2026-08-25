@@ -139,10 +139,7 @@
                                 </Column>
                                 <Column>
                                     <Text text="Referencia" />
-                                </Column>
-                                <Column>
-                                    <Text text="Clase de Condición" />
-                                </Column>
+                                </Column>                                
                                 <Column>
                                     <Text text="Fecha Documento" />
                                 </Column>
@@ -184,11 +181,7 @@
                                         <!-- Referencia -->
                                         <Text
                                             text="{documents>ReferenceDocument}"
-                                        />
-                                        <!-- Clase de Condición -->
-                                        <Text
-                                            text="{documents>SuplrInvcDeliveryCostCndnType}"
-                                        />
+                                        />                                        
                                         <!-- Fecha -->
                                         <Text
                                             text="{path: 'documents>DocumentDate', type:'sap.ui.model.type.Date', formatOptions:{style:'medium'}}"
