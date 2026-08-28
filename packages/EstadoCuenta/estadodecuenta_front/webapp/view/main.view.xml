@@ -77,11 +77,19 @@
 					<Column id="_IDGenColumn3" demandPopin="true" minScreenWidth="Tablet">
 						<Text id="_IDGenText4" text="Factura Pagada"/>
 					</Column>
+					<!-- NUEVO -->
+					<Column id="_IDGenColumnPaidInvoiceReference" demandPopin="true" minScreenWidth="Tablet">
+						<Text id="_IDGenTextPaidInvoiceReference" text="Referencia Factura"/>
+					</Column>
+					<!-- NUEVO -->
+					<Column id="_IDGenColumnPaidInvoiceUUID" width="22rem" demandPopin="false" minScreenWidth="Tablet">
+						<Text id="_IDGenTextPaidInvoiceUUID" text="UUID Factura"/>
+					</Column>
 					<Column id="_IDGenColumn4" demandPopin="true" minScreenWidth="Tablet">
 						<Text id="_IDGenText5" text="Tipo de Documento"/>
 					</Column>
 					<Column id="_IDGenColumnUUID" width="22rem" demandPopin="false" minScreenWidth="Phone">
-						<Text id="_IDGenTextUUID" text="UUID"/>
+						<Text id="_IDGenTextUUID" text="UUID Complemento"/>
 					</Column>
 					<Column id="_IDGenColumn5" demandPopin="true" minScreenWidth="Tablet">
 						<Text id="_IDGenText6" text="Fecha de Factura"/>
@@ -120,20 +128,21 @@ parts: [
 ],
 formatter: '.formatNumeroSAP'
 }"/>
-							<Text id="_IDGenText15" text="{
-parts: [
-{path: 'facturas>SupplierInvoice'},
-{path: 'facturas>DocumentType'}
-],
-formatter: '.formatFacturaDisplay'
-}"/>
-							<Text id="_IDGenText16" text="{
-parts: [
-{path: 'facturas>DocumentType'},
-{path: 'facturas>TipoDocumento'}
-],
-formatter: '.formatTipoDocumento'
-}"/>
+							<!-- Número de factura pagada -->
+							<Text id="_IDGenText15" text="{facturas>PaidInvoiceNumber}"/>
+							<!-- NUEVO: Referencia de factura -->
+							<Text id="_IDGenTextPaidInvoiceReferenceCell" text="{facturas>PaidInvoiceReference}" tooltip="{facturas>PaidInvoiceReference}"/>
+							<!-- NUEVO: UUID de factura -->
+							<Text id="_IDGenTextPaidInvoiceUUIDCell" text="{facturas>PaidInvoiceUUID}" width="22rem" wrapping="false" tooltip="{facturas>PaidInvoiceUUID}"/>
+							<!-- Tipo de documento -->
+							<Text id="_IDGenText16" text="{ 
+        parts: [ 
+            {path: 'facturas>DocumentType'}, 
+            {path: 'facturas>TipoDocumento'} 
+        ], 
+        formatter: '.formatTipoDocumento' 
+      }"/>
+							<!-- UUID ACTUAL: complemento de pago -->
 							<Text id="_IDGenTextUUIDCell" text="{facturas>UUID}" width="22rem" wrapping="false" tooltip="{facturas>UUID}"/>
 							<Text id="_IDGenText17" text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"/>
 							<Text id="_IDGenText18" text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"/>

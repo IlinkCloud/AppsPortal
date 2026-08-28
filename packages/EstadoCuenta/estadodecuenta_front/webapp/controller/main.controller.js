@@ -159,14 +159,30 @@ sap.ui.define([
       const bMostrarDatosPago = bPagadas || bTodos;
 
       this.byId("_IDGenColumn").setVisible(bMostrarEstatus);
+
       this.byId("_IDGenColumn6").setVisible(bMostrarDatosPago);
       this.byId("_IDGenColumn7").setVisible(bMostrarDatosPago);
       this.byId("_IDGenColumn8").setVisible(bMostrarDatosPago);
 
+      // NUEVO
+      this.byId("_IDGenColumnPaidInvoiceReference")
+        .setVisible(bMostrarDatosPago);
+
+      this.byId("_IDGenColumnPaidInvoiceUUID")
+        .setVisible(bMostrarDatosPago);
+
       this.byId("_IDGenStatus").setVisible(bMostrarEstatus);
+
       this.byId("_IDGenText18").setVisible(bMostrarDatosPago);
       this.byId("_IDGenText19").setVisible(bMostrarDatosPago);
       this.byId("_IDGenText20").setVisible(bMostrarDatosPago);
+
+      // NUEVO
+      this.byId("_IDGenTextPaidInvoiceReferenceCell")
+        .setVisible(bMostrarDatosPago);
+
+      this.byId("_IDGenTextPaidInvoiceUUIDCell")
+        .setVisible(bMostrarDatosPago);
     },
 
     formatTipoDocumentoPorEstatus: function (bCleared, tipo, documentType, tipoTexto) {
