@@ -104,6 +104,120 @@ sap.ui.define([
             this.getPaymentComplements();
         },
 
+        onPaymentDocumentPress: async function (oEvent) {
+
+            const oContext = oEvent
+                .getSource()
+                .getBindingContext("PCModel");
+
+            if (!oContext) {
+                MessageBox.error("No fue posible obtener la información del pago.");
+                return;
+            }
+
+            const oPayment = oContext.getObject();
+
+            const sSupplier = oPayment.Supplier;
+            const sFiscalYear = oPayment.FiscalYear;
+            const sAccountingDocument = oPayment.PaymentDocument;
+
+            if (!sSupplier || !sFiscalYear || !sAccountingDocument) {
+                MessageBox.warning(
+                    "No se cuenta con la información necesaria para consultar las facturas relacionadas."
+                );
+                return;
+            }
+
+            BusyIndicator.show(0);
+
+            try {
+
+                const oPayload = {
+                    Supplier: sSupplier,
+                    FiscalYear: sFiscalYear,
+                    AccountingDocument: sAccountingDocument
+                };
+
+                console.log(
+                    "[GetInvoicesFromPayment] Payload:",
+                    oPayload
+                );
+
+                const oResponse = await fetch(
+                    "/odata/v4/cfdipayment/GetInvoicesFromPayment",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        credentials: "include",
+                        body: JSON.stringify(oPayload)
+                    }
+                );
+
+                if (!oResponse.ok) {
+
+                    const sError = await oResponse.text();
+
+                    throw new Error(
+                        sError || "Error consultando facturas relacionadas."
+                    );
+                }
+
+                const oData = await oResponse.json();
+
+                /*
+                 * CAP puede responder directamente arreglo
+                 * o dentro de value dependiendo de versión/configuración.
+                 */
+                const aInvoices =
+                    Array.isArray(oData)
+                        ? oData
+                        : (oData.value || []);
+
+                console.log(
+                    "[GetInvoicesFromPayment] Facturas encontradas:",
+                    aInvoices
+                );
+
+                if (aInvoices.length === 0) {
+
+                    MessageBox.information(
+                        "No se encontraron facturas relacionadas al pago " +
+                        sAccountingDocument +
+                        "."
+                    );
+
+                    return;
+                }
+
+                this._showPaymentInvoicesDialog(
+                    sAccountingDocument,
+                    aInvoices
+                );
+
+            } catch (oError) {
+
+                console.error(
+                    "[GetInvoicesFromPayment] Error:",
+                    oError
+                );
+
+                MessageBox.error(
+                    "Error al consultar las facturas relacionadas:\n" +
+                    (oError.message || "Error desconocido")
+                );
+
+            } finally {
+
+                BusyIndicator.hide();
+
+            }
+        },
+
+
+
         _showUploadFileDialog(aSelected) {
             const oController = this;
             let aFiles;
@@ -714,6 +828,199 @@ sap.ui.define([
                 reader.onerror = error => reject(error);
             });
             return pFile;
+        },
+
+        _showPaymentInvoicesDialog: function (
+            sPaymentDocument,
+            aInvoices
+        ) {
+
+            const oNumberFormat =
+                sap.ui.core.format.NumberFormat.getCurrencyInstance({
+                    currencyCode: false,
+                    decimals: 2
+                });
+
+            const formatInvoiceDate = function (sDate) {
+
+                if (!sDate) {
+                    return "";
+                }
+
+                const oDate = new Date(sDate);
+
+                if (isNaN(oDate.getTime())) {
+                    return sDate;
+                }
+
+                return DateFormat
+                    .getDateInstance({
+                        pattern: "dd/MM/yyyy"
+                    })
+                    .format(oDate);
+            };
+
+
+            const oTable = new sap.m.Table({
+
+                width: "100%",
+
+                fixedLayout: false,
+
+                columns: [
+
+                    new sap.m.Column({
+                        width: "8rem",
+                        header: new sap.m.Label({
+                            text: "Num. Factura"
+                        })
+                    }),
+
+                    new sap.m.Column({
+                        width: "19rem",
+                        header: new sap.m.Label({
+                            text: "UUID"
+                        })
+                    }),
+
+                    new sap.m.Column({
+                        width: "11rem",
+                        header: new sap.m.Label({
+                            text: "Referencia"
+                        })
+                    }),
+
+                    new sap.m.Column({
+                        width: "9rem",
+                        header: new sap.m.Label({
+                            text: "Fecha de Factura"
+                        })
+                    }),
+
+                    new sap.m.Column({
+                        width: "10rem",
+                        hAlign: "End",
+                        header: new sap.m.Label({
+                            text: "Importe"
+                        })
+                    })
+
+                ]
+
+            });
+
+
+            aInvoices.forEach(function (oInvoice) {
+
+                const sAmount =
+                    oNumberFormat.format(
+                        Number(oInvoice.InvoiceGrossAmount || 0),
+                        oInvoice.DocumentCurrency || "MXN"
+                    );
+
+                oTable.addItem(
+
+                    new sap.m.ColumnListItem({
+
+                        cells: [
+
+                            new sap.m.Text({
+                                text:
+                                    oInvoice.OriginalReferenceDocument ||
+                                    ""
+                            }),
+
+                            new sap.m.Text({
+                                text:
+                                    oInvoice.UUID ||
+                                    "",
+                                wrapping: false
+                            }),
+
+                            new sap.m.Text({
+                                text:
+                                    oInvoice.Reference ||
+                                    oInvoice.AssignmentReference ||
+                                    "",
+                                wrapping: false
+                            }),
+
+                            new sap.m.Text({
+                                text:
+                                    formatInvoiceDate(
+                                        oInvoice.InvoiceDate
+                                    )
+                            }),
+
+                            new sap.m.ObjectNumber({
+                                number: sAmount,
+                                unit:
+                                    oInvoice.DocumentCurrency ||
+                                    "MXN"
+                            })
+
+                        ]
+
+                    })
+
+                );
+
+            });
+
+
+            const oDialog = new Dialog({
+
+                title: "Facturas Relacionadas",
+
+                contentWidth: "900px",
+
+                horizontalScrolling: true,
+
+                verticalScrolling: true,
+
+                content: [
+
+                    new sap.m.VBox({
+
+                        width: "100%",
+
+                        items: [
+
+                            new sap.m.Text({
+                                text:
+                                    "Documento de pago: " +
+                                    sPaymentDocument
+                            }).addStyleClass(
+                                "sapUiSmallMarginBottom"
+                            ),
+
+                            oTable
+
+                        ]
+
+                    })
+
+                ],
+
+                beginButton: new Button({
+
+                    text: "Cerrar",
+
+                    press: function () {
+                        oDialog.close();
+                    }
+
+                }),
+
+                afterClose: function () {
+                    oDialog.destroy();
+                }
+
+            });
+
+            this.getView().addDependent(oDialog);
+
+            oDialog.open();
         },
 
         formatDate(sDate) {

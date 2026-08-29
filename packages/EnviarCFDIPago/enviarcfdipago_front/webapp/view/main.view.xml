@@ -283,8 +283,9 @@
                             <ObjectIdentifier
                                 title="{PCModel>PaymentDocument}"
                                 text=""
-                                titleActive="false"
+                                titleActive="true"
                                 visible="true"
+                                titlePress=".onPaymentDocumentPress"
                             />
                             <Text
                                 text="{PCModel>SupplierName}"
