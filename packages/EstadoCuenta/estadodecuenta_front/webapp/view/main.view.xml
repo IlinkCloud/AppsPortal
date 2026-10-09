@@ -49,7 +49,22 @@
 				</VBox>
 			</Panel>
 			<!-- Tabla Resumen de Cuentas -->
-			<Table id="cuentasTable" inset="false" growing="true" growingScrollToLoad="true" items="{facturas>/facturas}">
+			<!-- Tabla Resumen de Cuentas -->
+<ScrollContainer
+    id="scrollEstadoCuenta"
+    width="100%"
+    height="auto"
+    horizontal="true"
+    vertical="false">
+
+    <Table
+        id="cuentasTable"
+        width="175rem"
+        fixedLayout="true"
+        inset="false"
+        growing="true"
+        growingScrollToLoad="true"
+        items="{facturas>/facturas}">
 				<headerToolbar>
 					<Toolbar id="_IDGenToolbar1">
 						<Title id="_IDGenTitle1" text="Resumen de Cuentas" level="H2"/>
@@ -65,45 +80,45 @@
 					</Toolbar>
 				</headerToolbar>
 				<columns>
-					<Column id="_IDGenColumn" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn" width="7rem" demandPopin="false">
 						<Text id="_IDGenText1" text="Estatus"/>
 					</Column>
-					<Column id="_IDGenColumn1">
-						<Text id="_IDGenText2" text="Nombre Proveedor"/>
+					<Column id="_IDGenColumn1" width="16rem" demandPopin="false" minScreenWidth="Tablet">
+						<Text id="_IDGenText2" text="Nombre Proveedor" wrapping="false"/>
 					</Column>
-					<Column id="_IDGenColumn2" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn2" width="10rem" demandPopin="false">
 						<Text id="_IDGenText3" text="Número SAP"/>
 					</Column>
-					<Column id="_IDGenColumn3" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn3" width="10rem" demandPopin="false">
 						<Text id="_IDGenText4" text="Factura Pagada"/>
 					</Column>
 					<!-- NUEVO -->
-					<Column id="_IDGenColumnPaidInvoiceReference" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumnPaidInvoiceReference" width="12rem" demandPopin="false">
 						<Text id="_IDGenTextPaidInvoiceReference" text="Referencia Factura"/>
 					</Column>
 					<!-- NUEVO -->
 					<Column id="_IDGenColumnPaidInvoiceUUID" width="22rem" demandPopin="false" minScreenWidth="Tablet">
 						<Text id="_IDGenTextPaidInvoiceUUID" text="UUID Factura"/>
 					</Column>
-					<Column id="_IDGenColumn4" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn4" width="11rem" demandPopin="false">
 						<Text id="_IDGenText5" text="Tipo de Documento"/>
 					</Column>
 					<Column id="_IDGenColumnUUID" width="22rem" demandPopin="false" minScreenWidth="Phone">
 						<Text id="_IDGenTextUUID" text="UUID Complemento"/>
 					</Column>
-					<Column id="_IDGenColumn5" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn5" width="10rem" demandPopin="false">
 						<Text id="_IDGenText6" text="Fecha de Factura"/>
 					</Column>
-					<Column id="_IDGenColumn6" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn6" width="10rem" demandPopin="false">
 						<Text id="_IDGenText7" text="Fecha de Recepción"/>
 					</Column>
-					<Column id="_IDGenColumn7" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn7" width="11rem" demandPopin="false">
 						<Text id="_IDGenText8" text="Documento de Pago"/>
 					</Column>
-					<Column id="_IDGenColumn8" demandPopin="true" minScreenWidth="Tablet">
+					<Column id="_IDGenColumn8" width="11rem" demandPopin="false">
 						<Text id="_IDGenText9" text="Fecha de pago efectiva"/>
 					</Column>
-					<Column id="_IDGenColumn9" hAlign="End">
+				<Column id="_IDGenColumn9" width="12rem" hAlign="End">
 						<Text id="_IDGenText10" text="Total"/>
 					</Column>
 				</columns>
@@ -118,7 +133,7 @@
         formatter: '.formatStatus'
     }" state="{path: 'facturas>IsCleared', formatter: '.formatStatusState'}"/>
 							<Text id="_IDGenText13" text="{facturas>SupplierName}"/>
-							<Text id="_IDGenLink" text="{
+							<Text id="_IDGenLink" wrapping="false" text="{
 parts: [
 {path: 'facturas>IsCleared'},
 {path: 'facturas>SupplierInvoice'},
@@ -153,6 +168,7 @@ formatter: '.formatNumeroSAP'
 					</ColumnListItem>
 				</items>
 			</Table>
+			 </ScrollContainer>
 		</content>
 	</Page>
 </mvc:View>

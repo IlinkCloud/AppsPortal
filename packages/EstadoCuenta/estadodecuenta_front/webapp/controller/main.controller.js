@@ -205,7 +205,7 @@ sap.ui.define([
           aFiltradas = aTodas
             .filter(f =>
               f.IsCleared === false &&
-              f.DocumentType === "RE"
+              (f.DocumentType === "RE" || f.DocumentType === "KR")
             )
             .map(f => ({
               ...f,
