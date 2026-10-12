@@ -1,0 +1,23 @@
+{
+  "authenticationMethod": "route",
+  "welcomeFile": "/expedientefront",
+  "routes": [
+    {
+      "source": "^/odata/(.*)$",
+      "target": "/odata/$1",
+      "destination": "BACKEND",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/object-store/(.*)$",
+      "target": "/object-store/$1",
+      "destination": "BACKEND",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    }
+  ],
+  "whitelistService": {
+    "endpoint": "/whitelist/service"
+  }
+}

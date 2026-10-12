@@ -1,0 +1,44 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+>
+    <Dialog
+        id="uploadProgressDialog"
+        title="{i18n>adminEE.uploadProgressTitle}"
+        contentWidth="25rem"
+        contentHeight="12rem"
+        draggable="false"
+        resizable="false"
+        stretchOnPhone="true"
+        beforeClose="onUploadProgressDialogBeforeClose"
+    >
+        <content>
+            <VBox
+                class="sapUiMediumMargin"
+                alignItems="Center"
+                justifyContent="Center"
+            >
+                <Text
+                    id="uploadProgressText"
+                    text="{i18n>adminEE.uploadingDocument}"
+                    class="sapUiSmallMarginBottom"
+                />
+
+                <ProgressIndicator
+                    id="uploadProgressIndicator"
+                    percentValue="0"
+                    displayValue=""
+                    showValue="false"
+                    width="100%"
+                    state="Information"
+                />
+
+                <Text
+                    id="uploadProgressStatus"
+                    text=""
+                    class="sapUiSmallMarginTop"
+                />
+            </VBox>
+        </content>
+    </Dialog>
+</core:FragmentDefinition>
