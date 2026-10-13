@@ -1,0 +1,441 @@
+<mvc:View
+    controllerName="expedientefront.controller.main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form"
+    xmlns:core="sap.ui.core"
+    xmlns:s="sap.f"
+    xmlns:t="sap.ui.table"
+    xmlns:u="sap.ui.unified"
+>
+    <Page
+        title="{i18n>adminEE.genDataFilesTitle}"
+        showNavButton="true"
+        navButtonPress="onNavBack"
+    >
+        <s:DynamicPage
+            id="dynamicPageId"
+            headerExpanded="{/headerExpanded}"
+            preserveHeaderStateOnScroll="true"
+        >
+            <s:content>
+                <VBox class="sapUiSmallMarginBottom">
+                    <Label
+                        text="{i18n>adminEE.supplier}"
+                        labelFor="supplierSelector"
+                    />
+
+                    <Select
+                        id="supplierSelector"
+                        width="25rem"
+                        selectedKey="{supplierSelector>/selectedSupplier}"
+                        change="onSupplierChange"
+                        items="{
+                            path: 'supplierSelector>/items'
+                        }"
+                    >
+                        <core:Item
+                            key="{supplierSelector>Supplier}"
+                            text="{
+                                parts: [
+                                    { path: 'supplierSelector>SupplierName' },
+                                    { path: 'supplierSelector>Supplier' }
+                                ],
+                                formatter: '.formatSupplier'
+                            }"
+                        />
+                    </Select>
+                    <IconTabBar
+                        id="iconTabBar"
+                        selectedKey="{viewModel>/selectedTab}"
+                        expandable="false"
+                        applyContentPadding="false"
+                        class="sapUiResponsiveContentPadding"
+                    >
+                        <items>
+                            <!-- Datos generales -->
+                            <IconTabFilter
+                                key="general"
+                                text="{i18n>adminEE.generalData}"
+                                icon="sap-icon://hint"
+                            >
+                                <f:Form
+                                    id="supplierForm"
+                                    ariaLabelledBy="supplierFormTitle"
+                                >
+                                    <f:toolbar>
+                                        <Toolbar>
+                                            <Title
+                                                id="supplierFormTitle"
+                                                text="{i18n>adminEE.supplierTitle}"
+                                            />
+                                            <ToolbarSpacer />
+                                            <Button
+                                                id="btnSaveSupplier"
+                                                text="{i18n>adminEE.save}"
+                                                icon="sap-icon://save"
+                                                type="Accept"
+                                                press="onSaveAnswer"
+                                                visible="{provData>/return}"
+                                                enabled="{provData>/return}"
+                                            />
+                                        </Toolbar>
+                                    </f:toolbar>
+
+                                    <f:layout>
+                                        <f:ResponsiveGridLayout
+                                            labelSpanXL="4"
+                                            labelSpanL="3"
+                                            labelSpanM="4"
+                                            labelSpanS="12"
+                                            emptySpanXL="0"
+                                            emptySpanL="4"
+                                            emptySpanM="0"
+                                            emptySpanS="0"
+                                            columnsXL="2"
+                                            columnsL="1"
+                                            columnsM="1"
+                                            singleContainerFullSize="false"
+                                        />
+                                    </f:layout>
+
+                                    <f:formContainers>
+                                        <!-- Información del proveedor -->
+                                        <f:FormContainer
+                                            ariaLabelledBy="supplierDataTitle"
+                                        >
+                                            <f:toolbar>
+                                                <Toolbar>
+                                                    <Title
+                                                        id="supplierDataTitle"
+                                                        text="{i18n>adminEE.supplierInformation}"
+                                                    />
+                                                </Toolbar>
+                                            </f:toolbar>
+
+                                            <f:formElements>
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.name}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/SupplierName}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.taxId}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/TaxNumber1}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.accountType}"
+                                                >
+                                                    <f:fields>
+                                                        <Select
+                                                            id="accountType"
+                                                            width="100%"
+                                                            selectedKey="{provData>/AccTypeId}"
+                                                            change="onAccountTypeChange"
+                                                            enabled="{provData>/return}"
+                                                            forceSelection="false"
+                                                            items="{ path: 'accountTypeList>/items' }"
+                                                        >
+                                                            <core:Item
+                                                                key="{accountTypeList>Id}"
+                                                                text="{
+                                                                    parts: [
+                                                                        { path: 'accountTypeList>Id' },
+                                                                        { path: 'accountTypeList>Description' }
+                                                                    ],
+                                                                    formatter: '.formatAccountType'
+                                                                }"
+                                                            />
+                                                        </Select>
+                                                    </f:fields>
+                                                </f:FormElement>
+                                            </f:formElements>
+                                        </f:FormContainer>
+
+                                        <!-- Dirección -->
+                                        <f:FormContainer
+                                            ariaLabelledBy="addressTitle"
+                                        >
+                                            <f:toolbar>
+                                                <Toolbar>
+                                                    <Title
+                                                        id="addressTitle"
+                                                        text="{i18n>adminEE.address}"
+                                                    />
+                                                </Toolbar>
+                                            </f:toolbar>
+
+                                            <f:formElements>
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.streetNumber}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/StreetName}"
+                                                        />
+                                                        <Text
+                                                            text="{supplierData>/HouseNumber}"
+                                                        />
+                                                        <Text
+                                                            text="{supplierData>/HouseNum2}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.countryState}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/CountryName}"
+                                                        />
+                                                        <Text
+                                                            text="{supplierData>/RegionName}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.zipCodeCity}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/PostalCode}"
+                                                        >
+                                                            <layoutData>
+                                                                <l:GridData
+                                                                    span="XL2 L1 M3 S4"
+                                                                />
+                                                            </layoutData>
+                                                        </Text>
+                                                        <Text
+                                                            text="{supplierData>/City}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+                                            </f:formElements>
+                                        </f:FormContainer>
+
+                                        <!-- Contacto -->
+                                        <f:FormContainer
+                                            ariaLabelledBy="contactTitle"
+                                        >
+                                            <f:toolbar>
+                                                <Toolbar>
+                                                    <Title
+                                                        id="contactTitle"
+                                                        text="{i18n>adminEE.contact}"
+                                                    />
+                                                </Toolbar>
+                                            </f:toolbar>
+
+                                            <f:formElements>
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.contactPerson}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/ContactPerson}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.email}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/UserMail}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.telephone}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/SupplierPhoneNumber}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+
+                                                <f:FormElement
+                                                    label="{i18n>adminEE.mobile}"
+                                                >
+                                                    <f:fields>
+                                                        <Text
+                                                            text="{supplierData>/Movil}"
+                                                        />
+                                                    </f:fields>
+                                                </f:FormElement>
+                                            </f:formElements>
+                                        </f:FormContainer>
+                                    </f:formContainers>
+                                </f:Form>
+                            </IconTabFilter>
+
+                            <!-- Expediente -->
+                            <IconTabFilter
+                                id="menuExpediente"
+                                key="documents"
+                                count="{viewModel>/filesUploaded}"
+                                text="{i18n>adminEE.documents}"
+                                icon="sap-icon://documents"
+                                visible="{provData>/expediente}"
+                            >
+                                <t:Table
+                                    id="documentList"
+                                    rows="{
+                                    path: 'supplierDocs>/documentItem',
+                                    templateShareable: false
+                                }"
+                                    selectionMode="None"
+                                    rowActionCount="1"
+                                >
+                                    <t:columns>
+                                        <t:Column
+                                            width="0px"
+                                            visible="false"
+                                        >
+                                            <Label text="{i18n>adminEE.id}" />
+                                            <t:template>
+                                                <Text
+                                                    text="{supplierDocs>DocumentId}"
+                                                />
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="25rem">
+                                            <Label
+                                                text="{i18n>adminEE.documentName}"
+                                            />
+                                            <t:template>
+                                                <Text
+                                                    text="{supplierDocs>DocumentName}"
+                                                />
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="10rem">
+                                            <Label
+                                                text="{i18n>adminEE.fileType}"
+                                            />
+                                            <t:template>
+                                                <Text
+                                                    text="{supplierDocs>FileType}"
+                                                />
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="5rem">
+                                            <Label
+                                                text="{i18n>adminEE.optional}"
+                                            />
+                                            <t:template>
+                                                <CheckBox
+                                                    selected="{
+                                                        path: 'supplierDocs>Optional',
+                                                        formatter: '.formatOptional'
+                                                    }"
+                                                    enabled="false"
+                                                />
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="18rem">
+                                            <Label
+                                                text="{i18n>adminEE.fileName}"
+                                            />
+                                            <t:template>
+                                                <HBox alignItems="Center">
+                                                    <Link
+                                                        text="{supplierDocs>FileName}"
+                                                        press="onViewDocument"
+                                                        visible="{= !!${supplierDocs>FileName} }"
+                                                        wrapping="false"
+                                                    />
+                                                    <u:FileUploader
+                                                        width="auto"
+                                                        name="FileUpload"
+                                                        enabled="{supplierDocs>upLoadEnabled}"
+                                                        visible="{= !${supplierDocs>FileName} }"
+                                                        typeMissmatch="handleTypeMissmatch"
+                                                        value="{supplierDocs>FileName}"
+                                                        change="onChangeFUP"
+                                                        buttonText="{i18n>adminEE.selectFile}"
+                                                        fileType="pdf"
+                                                    />
+                                                </HBox>
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="12rem">
+                                            <Label
+                                                text="{i18n>adminEE.status}"
+                                            />
+                                            <t:template>
+                                                <HBox
+                                                    alignItems="Center"
+                                                    gap="0.5rem"
+                                                >
+                                                    <core:Icon
+                                                        src="{supplierDocs>StatusIcon}"
+                                                        tooltip="{supplierDocs>StatusText}"
+                                                    />
+                                                    <Text
+                                                        text="{supplierDocs>StatusText}"
+                                                    />
+                                                </HBox>
+                                            </t:template>
+                                        </t:Column>
+
+                                        <t:Column width="auto">
+                                            <Label
+                                                text="{i18n>adminEE.message}"
+                                            />
+                                            <t:template>
+                                                <Text
+                                                    text="{supplierDocs>MsjError}"
+                                                />
+                                            </t:template>
+                                        </t:Column>
+                                    </t:columns>
+
+                                    <t:rowActionTemplate>
+                                        <t:RowAction>
+                                            <t:RowActionItem
+                                                icon="sap-icon://delete"
+                                                text="{i18n>adminEE.delete}"
+                                                press="onDeleteRowPress"
+                                                visible="{supplierDocs>deleteable}"
+                                            />
+                                        </t:RowAction>
+                                    </t:rowActionTemplate>
+
+                                    <t:rowSettingsTemplate>
+                                        <t:RowSettings
+                                            highlight="{supplierDocs>RowHighlight}"
+                                        />
+                                    </t:rowSettingsTemplate>
+                                </t:Table>
+                            </IconTabFilter>
+                        </items>
+                    </IconTabBar>
+                </VBox>
+            </s:content>
+        </s:DynamicPage>
+    </Page>
+</mvc:View>
