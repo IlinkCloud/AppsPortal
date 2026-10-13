@@ -843,18 +843,49 @@ sap.ui.define([
 
                 const data = await res.json();
 
-                // === Adjuntar PDF y XML ===
+                const sRealInvoiceStatus = data.SupplierInvoiceStatus;
+
+                console.log('[NC][MIRO] Resultado contabilización:', {
+                    SupplierInvoice: data.SupplierInvoice,
+                    EstatusSolicitado: sInvoiceStatus,
+                    EstatusReal: sRealInvoiceStatus
+                });
+
+                // Validar respuesta antes de intentar adjuntar archivos
+                if (!data.SupplierInvoice || !['5', 'A'].includes(sRealInvoiceStatus)) {
+                    throw new Error(
+                        'La respuesta de MIRO no contiene un documento o estatus válido. ' +
+                        'Verifique el resultado en SAP antes de intentar nuevamente.'
+                    );
+                }
+
+                // === Adjuntar PDF y XML según estatus real ===
                 const [oMessagePDF, oMessageXML] = await Promise.allSettled([
-                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
-                        .catch(err => ({ message: `PDF: ${err.message}`, success: false })),
-                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
-                        .catch(err => ({ message: `XML: ${err.message}`, success: false }))
+                    this.postLogAttachmentPDF(
+                        pdfFile,
+                        data.SupplierInvoice,
+                        datosCFDI.SUPPLIER,
+                        sRealInvoiceStatus
+                    ).catch(err => ({
+                        message: `PDF: ${err.message}`,
+                        success: false
+                    })),
+
+                    this.postLogAttachmentXML(
+                        xmlFile,
+                        data.SupplierInvoice,
+                        datosCFDI.SUPPLIER,
+                        sRealInvoiceStatus
+                    ).catch(err => ({
+                        message: `XML: ${err.message}`,
+                        success: false
+                    }))
                 ]);
 
                 const aResults = [
                     {
                         label: "Nota de crédito a MIRO",
-                        message: `Nota de crédito enviada a MIRO. ID: ${data.SupplierInvoice || "sin ID"}`,
+                        message: `Nota de crédito registrada ${sRealInvoiceStatus === 'A' ? 'como preliminar' : 'como definitiva'}. ID: ${data.SupplierInvoice}`,
                         icon: "sap-icon://accounting-document-verification",
                         success: true
                     },
