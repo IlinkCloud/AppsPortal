@@ -473,11 +473,13 @@ sap.ui.define([
                                         const documentDate = oFirstData.DocumentDate
                                             ? oFirstData.DocumentDate.toISOString().split('T')[0]
                                             : null;
+                                        const DocumentCurrency = oFirstData.DocumentCurrency;
                                         const payload = {
                                             xmlBase64,
                                             proveedorId,
                                             sociedadId,
                                             tipoDocumento: "I",
+                                            DocumentCurrency,
                                             fechaFactura,
                                             documentDate: documentDate
                                         };
@@ -1007,22 +1009,11 @@ sap.ui.define([
 
                 const data = await res.json();
 
-                // === ESTATUS REAL DE FACTURA CREADA EN SAP ===
-                const sRealInvoiceStatus = data.SupplierInvoiceStatus;
-
-                if (!["5", "A"].includes(sRealInvoiceStatus)) {
-                    sap.m.MessageBox.error(
-                        "La factura fue procesada, pero no se recibió un estatus válido para adjuntar los archivos. " +
-                        "Verifique el documento antes de volver a enviarlo."
-                    );
-                    return;
-                }
-
                 // === Adjuntar PDF y XML ===
                 const [oMessagePDF, oMessageXML] = await Promise.allSettled([
-                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sRealInvoiceStatus)
+                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
                         .catch(err => ({ message: `PDF: ${err.message}`, success: false })),
-                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sRealInvoiceStatus)
+                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
                         .catch(err => ({ message: `XML: ${err.message}`, success: false }))
                 ]);
 
