@@ -205,7 +205,11 @@ sap.ui.define([
           aFiltradas = aTodas
             .filter(f =>
               f.IsCleared === false &&
-              (f.DocumentType === "RE" || f.DocumentType === "KR")
+              (
+                f.DocumentType === "RE" ||
+                f.DocumentType === "KR" ||
+                f.DocumentType === "KA"
+              )
             )
             .map(f => ({
               ...f,
@@ -338,7 +342,14 @@ sap.ui.define([
 
       if (tipo === "ZP" || tipo === "KZ") return "PAGO";
       if (tipo === "NC") return "NOTA DE CRÉDITO";
-      if (tipo === "RE") return "FACTURA";
+
+      if (
+        tipo === "RE" ||
+        tipo === "KR" ||
+        tipo === "KA"
+      ) {
+        return "FACTURA";
+      }
 
       return tipo || "";
     },
