@@ -385,12 +385,14 @@ sap.ui.define([
                                         const documentDate = oFirstData.DocumentDate
                                             ? oFirstData.DocumentDate.toISOString().split('T')[0]
                                             : null;
+                                        const DocumentCurrency = oFirstData.DocumentCurrency;
                                         // === Tipo de documento "E" para nota de crédito ===
                                         const payload = {
                                             xmlBase64,
                                             proveedorId,
                                             sociedadId,
                                             tipoDocumento: "E",
+                                            DocumentCurrency,
                                             fechaFactura,
                                             documentDate: documentDate
                                         };
