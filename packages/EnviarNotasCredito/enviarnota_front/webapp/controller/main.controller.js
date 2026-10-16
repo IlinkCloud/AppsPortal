@@ -445,7 +445,26 @@ sap.ui.define([
                                                         : "";
                                                     data.datos.FixedUUID = data.datos.Comprobante?.['cfdi:CfdiRelacionados']?.['cfdi:CfdiRelacionado']?.['@_UUID'] || null;
 
-                                                    oController._mostrarResumenCFDI(data.datos, pdfFile, xmlFile);
+                                                    const warnings = Array.isArray(data.warnings) ? data.warnings.filter(Boolean) : [];
+
+                                                    if (warnings.length > 0) {
+                                                        MessageBox.warning(
+                                                            "La factura presenta las siguientes advertencias:\n\n" +
+                                                            warnings.join("\n"),
+                                                            {
+                                                                title: "Advertencias de validación",
+                                                                onClose: () => {
+                                                                    oController._mostrarResumenCFDI(
+                                                                        data.datos,
+                                                                        pdfFile,
+                                                                        xmlFile
+                                                                    );
+                                                                }
+                                                            }
+                                                        );
+                                                    } else {
+                                                        oController._mostrarResumenCFDI(data.datos, pdfFile, xmlFile);
+                                                    }
                                                 }
                                             } else {
                                                 const errores = data.errores || [data.mensaje] || ["Nota de crédito inválida"];
