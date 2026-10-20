@@ -285,7 +285,7 @@
                                 text=""
                                 titleActive="true"
                                 visible="true"
-                                titlePress=".onPaymentDocumentPress"
+                                titlePress="onPaymentDocumentPress"
                             />
                             <Text
                                 text="{PCModel>SupplierName}"

@@ -84,7 +84,15 @@ sap.ui.define([
           let saldos = {};
           (data.value || []).forEach(f => {
             if (!f.IsCleared) {
-              const monto = parseFloat(f.SupplierInvoiceItemAmount || 0);
+              let monto = parseFloat(f.SupplierInvoiceItemAmount || 0);
+
+              // Los anticipos disminuyen el saldo por pagar.
+              if (
+                f.TipoDocumento === "ANTICIPO" &&
+                f.SpecialGLCode === "A"
+              ) {
+                monto = -Math.abs(monto);
+              }
               const moneda = f.DocumentCurrency || "MXN";
               if (!isNaN(monto)) {
                 saldos[moneda] = (saldos[moneda] || 0) + monto;
@@ -129,8 +137,19 @@ sap.ui.define([
       return bCleared ? "Pagada" : "Pendiente";
     },
 
-    //  ACTUALIZADO: Controla el Número SAP según si es Factura o Pago
-    formatNumeroSAP: function (bCleared, supplierInvoice, clearingDoc, docType, accountingDocument) {
+    formatNumeroSAP: function (
+      bCleared,
+      supplierInvoice,
+      clearingDoc,
+      docType,
+      accountingDocument,
+      tipoTexto
+    ) {
+
+      if (tipoTexto === "ANTICIPO") {
+        return accountingDocument || "";
+      }
+
       if (docType === "NC") {
         return accountingDocument || "";
       }
@@ -208,7 +227,7 @@ sap.ui.define([
               (
                 f.DocumentType === "RE" ||
                 f.DocumentType === "KR" ||
-                f.DocumentType === "KA"
+                f.TipoDocumento === "ANTICIPO"
               )
             )
             .map(f => ({
@@ -338,16 +357,21 @@ sap.ui.define([
     },
 
     formatTipoDocumento: function (tipo, tipoTexto) {
-      if (tipoTexto) return tipoTexto;
 
-      if (tipo === "ZP" || tipo === "KZ") return "PAGO";
-      if (tipo === "NC") return "NOTA DE CRÉDITO";
+      // La clasificación del backend tiene prioridad.
+      if (tipoTexto) {
+        return tipoTexto;
+      }
 
-      if (
-        tipo === "RE" ||
-        tipo === "KR" ||
-        tipo === "KA"
-      ) {
+      if (tipo === "ZP" || tipo === "KZ") {
+        return "PAGO";
+      }
+
+      if (tipo === "NC") {
+        return "NOTA DE CRÉDITO";
+      }
+
+      if (tipo === "RE" || tipo === "KR") {
         return "FACTURA";
       }
 

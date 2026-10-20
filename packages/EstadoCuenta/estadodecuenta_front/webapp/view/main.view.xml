@@ -50,125 +50,113 @@
 			</Panel>
 			<!-- Tabla Resumen de Cuentas -->
 			<!-- Tabla Resumen de Cuentas -->
-<ScrollContainer
-    id="scrollEstadoCuenta"
-    width="100%"
-    height="auto"
-    horizontal="true"
-    vertical="false">
-
-    <Table
-        id="cuentasTable"
-        width="175rem"
-        fixedLayout="true"
-        inset="false"
-        growing="true"
-        growingScrollToLoad="true"
-        items="{facturas>/facturas}">
-				<headerToolbar>
-					<Toolbar id="_IDGenToolbar1">
-						<Title id="_IDGenTitle1" text="Resumen de Cuentas" level="H2"/>
-						<ToolbarSpacer id="_IDGenToolbarSpacer2"/>
-						<SearchField id="_IDGenSearchField" width="20%" placeholder="Buscar..." liveChange=".onSearch"/>
-						<Select id="_IDGenSelect" change=".onSearchFieldChange">
-							<core:Item id="_IDGenItem1" key="IsCleared" text="Estatus"/>
-							<core:Item id="_IDGenItem2" key="AccountingDocument" text="Numero SAP"/>
-							<core:Item id="_IDGenItem3" key="SupplierInvoice" text="Factura Pagada"/>
-							<core:Item id="_IDGenItem4" key="TipoDocumento" text="Tipo de documento"/>
-							<core:Item id="_IDGenItem5" key="SupplierName" text="Nombre de proveedor"/>
-						</Select>
-					</Toolbar>
-				</headerToolbar>
-				<columns>
-					<Column id="_IDGenColumn" width="7rem" demandPopin="false">
-						<Text id="_IDGenText1" text="Estatus"/>
-					</Column>
-					<Column id="_IDGenColumn1" width="16rem" demandPopin="false" minScreenWidth="Tablet">
-						<Text id="_IDGenText2" text="Nombre Proveedor" wrapping="false"/>
-					</Column>
-					<Column id="_IDGenColumn2" width="10rem" demandPopin="false">
-						<Text id="_IDGenText3" text="Número SAP"/>
-					</Column>
-					<Column id="_IDGenColumn3" width="10rem" demandPopin="false">
-						<Text id="_IDGenText4" text="Factura Pagada"/>
-					</Column>
-					<!-- NUEVO -->
-					<Column id="_IDGenColumnPaidInvoiceReference" width="12rem" demandPopin="false">
-						<Text id="_IDGenTextPaidInvoiceReference" text="Referencia Factura"/>
-					</Column>
-					<!-- NUEVO -->
-					<Column id="_IDGenColumnPaidInvoiceUUID" width="22rem" demandPopin="false" minScreenWidth="Tablet">
-						<Text id="_IDGenTextPaidInvoiceUUID" text="UUID Factura"/>
-					</Column>
-					<Column id="_IDGenColumn4" width="11rem" demandPopin="false">
-						<Text id="_IDGenText5" text="Tipo de Documento"/>
-					</Column>
-					<Column id="_IDGenColumnUUID" width="22rem" demandPopin="false" minScreenWidth="Phone">
-						<Text id="_IDGenTextUUID" text="UUID Complemento"/>
-					</Column>
-					<Column id="_IDGenColumn5" width="10rem" demandPopin="false">
-						<Text id="_IDGenText6" text="Fecha de Factura"/>
-					</Column>
-					<Column id="_IDGenColumn6" width="10rem" demandPopin="false">
-						<Text id="_IDGenText7" text="Fecha de Recepción"/>
-					</Column>
-					<Column id="_IDGenColumn7" width="11rem" demandPopin="false">
-						<Text id="_IDGenText8" text="Documento de Pago"/>
-					</Column>
-					<Column id="_IDGenColumn8" width="11rem" demandPopin="false">
-						<Text id="_IDGenText9" text="Fecha de pago efectiva"/>
-					</Column>
-				<Column id="_IDGenColumn9" width="12rem" hAlign="End">
-						<Text id="_IDGenText10" text="Total"/>
-					</Column>
-				</columns>
-				<items>
-					<ColumnListItem id="_IDGenColumnListItem1">
-						<cells>
-							<ObjectStatus id="_IDGenStatus" text="{
+			<ScrollContainer id="scrollEstadoCuenta" width="100%" height="auto" horizontal="true" vertical="false">
+				<Table id="cuentasTable" width="175rem" fixedLayout="true" inset="false" growing="true" growingScrollToLoad="true" items="{facturas>/facturas}">
+					<headerToolbar>
+						<Toolbar id="_IDGenToolbar1">
+							<Title id="_IDGenTitle1" text="Resumen de Cuentas" level="H2"/>
+							<ToolbarSpacer id="_IDGenToolbarSpacer2"/>
+							<SearchField id="_IDGenSearchField" width="20%" placeholder="Buscar..." liveChange=".onSearch"/>
+							<Select id="_IDGenSelect" change=".onSearchFieldChange">
+								<core:Item id="_IDGenItem1" key="IsCleared" text="Estatus"/>
+								<core:Item id="_IDGenItem2" key="AccountingDocument" text="Numero SAP"/>
+								<core:Item id="_IDGenItem3" key="SupplierInvoice" text="Factura Pagada"/>
+								<core:Item id="_IDGenItem4" key="TipoDocumento" text="Tipo de documento"/>
+								<core:Item id="_IDGenItem5" key="SupplierName" text="Nombre de proveedor"/>
+							</Select>
+						</Toolbar>
+					</headerToolbar>
+					<columns>
+						<Column id="_IDGenColumn" width="7rem" demandPopin="false">
+							<Text id="_IDGenText1" text="Estatus"/>
+						</Column>
+						<Column id="_IDGenColumn1" width="16rem" demandPopin="false" minScreenWidth="Tablet">
+							<Text id="_IDGenText2" text="Nombre Proveedor" wrapping="false"/>
+						</Column>
+						<Column id="_IDGenColumn2" width="10rem" demandPopin="false">
+							<Text id="_IDGenText3" text="Número SAP"/>
+						</Column>
+						<Column id="_IDGenColumn3" width="10rem" demandPopin="false">
+							<Text id="_IDGenText4" text="Factura Pagada"/>
+						</Column>
+						<!-- NUEVO -->
+						<Column id="_IDGenColumnPaidInvoiceReference" width="12rem" demandPopin="false">
+							<Text id="_IDGenTextPaidInvoiceReference" text="Referencia Factura"/>
+						</Column>
+						<!-- NUEVO -->
+						<Column id="_IDGenColumnPaidInvoiceUUID" width="22rem" demandPopin="false" minScreenWidth="Tablet">
+							<Text id="_IDGenTextPaidInvoiceUUID" text="UUID Factura"/>
+						</Column>
+						<Column id="_IDGenColumn4" width="11rem" demandPopin="false">
+							<Text id="_IDGenText5" text="Tipo de Documento"/>
+						</Column>
+						<Column id="_IDGenColumnUUID" width="22rem" demandPopin="false" minScreenWidth="Phone">
+							<Text id="_IDGenTextUUID" text="UUID Complemento"/>
+						</Column>
+						<Column id="_IDGenColumn5" width="10rem" demandPopin="false">
+							<Text id="_IDGenText6" text="Fecha de Factura"/>
+						</Column>
+						<Column id="_IDGenColumn6" width="10rem" demandPopin="false">
+							<Text id="_IDGenText7" text="Fecha de Recepción"/>
+						</Column>
+						<Column id="_IDGenColumn7" width="11rem" demandPopin="false">
+							<Text id="_IDGenText8" text="Documento de Pago"/>
+						</Column>
+						<Column id="_IDGenColumn8" width="11rem" demandPopin="false">
+							<Text id="_IDGenText9" text="Fecha de pago efectiva"/>
+						</Column>
+						<Column id="_IDGenColumn9" width="12rem" hAlign="End">
+							<Text id="_IDGenText10" text="Total"/>
+						</Column>
+					</columns>
+					<items>
+						<ColumnListItem id="_IDGenColumnListItem1">
+							<cells>
+								<ObjectStatus id="_IDGenStatus" text="{
         parts: [
             {path: 'facturas>IsCleared'},
             {path: 'facturas>DocumentType'}
         ],
         formatter: '.formatStatus'
     }" state="{path: 'facturas>IsCleared', formatter: '.formatStatusState'}"/>
-							<Text id="_IDGenText13" text="{facturas>SupplierName}"/>
-							<Text id="_IDGenLink" wrapping="false" text="{
+								<Text id="_IDGenText13" text="{facturas>SupplierName}"/>
+								<Text id="_IDGenLink" wrapping="false" text="{
 parts: [
 {path: 'facturas>IsCleared'},
 {path: 'facturas>SupplierInvoice'},
 {path: 'facturas>ClearingAccountingDocument'},
 {path: 'facturas>DocumentType'},
-{path: 'facturas>AccountingDocument'}
+{path: 'facturas>AccountingDocument'},
+{path: 'facturas>TipoDocumento'}
 ],
 formatter: '.formatNumeroSAP'
 }"/>
-							<!-- Número de factura pagada -->
-							<Text id="_IDGenText15" text="{facturas>PaidInvoiceNumber}"/>
-							<!-- NUEVO: Referencia de factura -->
-							<Text id="_IDGenTextPaidInvoiceReferenceCell" text="{facturas>PaidInvoiceReference}" tooltip="{facturas>PaidInvoiceReference}"/>
-							<!-- NUEVO: UUID de factura -->
-							<Text id="_IDGenTextPaidInvoiceUUIDCell" text="{facturas>PaidInvoiceUUID}" width="22rem" wrapping="false" tooltip="{facturas>PaidInvoiceUUID}"/>
-							<!-- Tipo de documento -->
-							<Text id="_IDGenText16" text="{ 
+								<!-- Número de factura pagada -->
+								<Text id="_IDGenText15" text="{facturas>PaidInvoiceNumber}"/>
+								<!-- NUEVO: Referencia de factura -->
+								<Text id="_IDGenTextPaidInvoiceReferenceCell" text="{facturas>PaidInvoiceReference}" tooltip="{facturas>PaidInvoiceReference}"/>
+								<!-- NUEVO: UUID de factura -->
+								<Text id="_IDGenTextPaidInvoiceUUIDCell" text="{facturas>PaidInvoiceUUID}" width="22rem" wrapping="false" tooltip="{facturas>PaidInvoiceUUID}"/>
+								<!-- Tipo de documento -->
+								<Text id="_IDGenText16" text="{ 
         parts: [ 
             {path: 'facturas>DocumentType'}, 
             {path: 'facturas>TipoDocumento'} 
         ], 
         formatter: '.formatTipoDocumento' 
       }"/>
-							<!-- UUID ACTUAL: complemento de pago -->
-							<Text id="_IDGenTextUUIDCell" text="{facturas>UUID}" width="22rem" wrapping="false" tooltip="{facturas>UUID}"/>
-							<Text id="_IDGenText17" text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"/>
-							<Text id="_IDGenText18" text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"/>
-							<Text id="_IDGenText19" text="{facturas>ClearingAccountingDocument}"/>
-							<Text id="_IDGenText20" text="{path: 'facturas>ClearingDate', formatter: '.formatDateSimple'}"/>
-							<ObjectNumber id="_IDGenObjectNumber" number="{= ${facturas>AmountInTransactionCurrency} || ${facturas>SupplierInvoiceItemAmount} || 0 }" unit="{facturas>TransactionCurrency}" emphasized="true"/>
-						</cells>
-					</ColumnListItem>
-				</items>
-			</Table>
-			 </ScrollContainer>
+								<!-- UUID ACTUAL: complemento de pago -->
+								<Text id="_IDGenTextUUIDCell" text="{facturas>UUID}" width="22rem" wrapping="false" tooltip="{facturas>UUID}"/>
+								<Text id="_IDGenText17" text="{path: 'facturas>DocumentDate', formatter: '.formatDateSimple'}"/>
+								<Text id="_IDGenText18" text="{path: 'facturas>ClearingCreationDate', formatter: '.formatDateSimple'}"/>
+								<Text id="_IDGenText19" text="{facturas>ClearingAccountingDocument}"/>
+								<Text id="_IDGenText20" text="{path: 'facturas>ClearingDate', formatter: '.formatDateSimple'}"/>
+								<ObjectNumber id="_IDGenObjectNumber" number="{= ${facturas>AmountInTransactionCurrency} || ${facturas>SupplierInvoiceItemAmount} || 0 }" unit="{facturas>TransactionCurrency}" emphasized="true"/>
+							</cells>
+						</ColumnListItem>
+					</items>
+				</Table>
+			</ScrollContainer>
 		</content>
 	</Page>
 </mvc:View>

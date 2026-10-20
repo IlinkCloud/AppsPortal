@@ -106,6 +106,11 @@ sap.ui.define([
 
         onPaymentDocumentPress: async function (oEvent) {
 
+            console.log(
+                "[onPaymentDocumentPress] EVENTO EJECUTADO",
+                oEvent
+            );
+
             const oContext = oEvent
                 .getSource()
                 .getBindingContext("PCModel");
