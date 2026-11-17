@@ -13,12 +13,46 @@ sap.ui.define([
 
     return Controller.extend("enviarfacturasfront.controller.main", {
         onInit() {
+
+            this._oUserAccessModel = new sap.ui.model.odata.v4.ODataModel({
+                serviceUrl: "/odata/v4/invitacion/",
+                synchronizationMode: "None",
+                operationMode: "Server",
+                autoExpandSelect: true
+            });
+
             this._oAclaModel = new ODataModel({
                 serviceUrl: "/odata/v4/aclaraciones/",
                 synchronizationMode: "None"
             });
-            this._setDefaultDates();
-            this.getReadGoodsReceipt();
+
+            this._pInitialization = this._initializeApp();
+        },
+
+        _initializeApp: async function () {
+            const oView = this.getView();
+
+            try {
+                oView.setBusy(true);
+
+                // Validar el registro del usuario en IAS
+                await this.validateUserAccess();
+
+                this._setDefaultDates();
+                await this.getReadGoodsReceipt();
+
+            } catch (error) {
+                console.error("[Initialization] Error:", error);
+            } finally {
+                oView.setBusy(false);
+            }
+        },
+        validateUserAccess: async function () {
+            const oOperation = this._oUserAccessModel.bindContext("/ValidateUserAccess(...)");
+            await oOperation.invoke();
+            const oResult = oOperation.getBoundContext().getObject();
+            console.log("[ValidateUserAccess] Respuesta:", oResult);
+            return oResult;
         },
 
         _setDefaultDates: function () {
