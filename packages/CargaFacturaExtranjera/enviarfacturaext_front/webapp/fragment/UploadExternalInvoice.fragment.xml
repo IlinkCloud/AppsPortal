@@ -1,0 +1,134 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:unified="sap.ui.unified"
+>
+    <Dialog
+        id="dlgFacturaExterna"
+        title="Enviar Factura Externa"
+        contentWidth="40rem"
+    >
+        <content>
+            <VBox class="sapUiSmallMargin">
+
+                <!-- Documento PDF -->
+                <Panel
+                    headerText="Documento PDF"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <content>
+                        <VBox class="sapUiSmallMargin">
+
+                            <unified:FileUploader
+                                id="invoicePdfUploader"
+                                name="invoicePdf"
+                                fileType="pdf"
+                                mimeType="application/pdf"
+                                maximumFileSize="20"
+                                buttonText="Seleccionar PDF"
+                                change=".onInvoicePdfChange"
+                                typeMissmatch=".onInvoicePdfTypeMismatch"
+                                fileSizeExceed=".onInvoicePdfSizeExceed"
+                                width="100%"
+                            />
+
+                            <Text
+                                id="selectedPdfName"
+                                text="Ningún archivo seleccionado"
+                                class="sapUiSmallMarginTop"
+                            />
+
+                            <Button
+                                id="btnProcessInvoice"
+                                text="Procesar factura"
+                                icon="sap-icon://process"
+                                type="Emphasized"
+                                press=".onProcessInvoice"
+                                enabled="false"
+                                class="sapUiSmallMarginTop"
+                            />
+
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <!-- Detalle de factura -->
+                <Panel
+                    headerText="Detalle de Factura"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <content>
+                        <form:SimpleForm
+                            id="simpleFormExternalInvoice"
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                        >
+                            <Label text="Número de Factura"/>
+                            <Input
+                                value="{invoiceExternal>/InvoiceNumber}"
+                            />
+
+                            <Label text="Subtotal"/>
+                            <Input
+                                value="{invoiceExternal>/Subtotal}"
+                                type="Number"
+                            />
+
+                            <Label text="Total"/>
+                            <Input
+                                value="{invoiceExternal>/Total}"
+                                type="Number"
+                            />
+
+                            <Label text="Fecha Factura"/>
+                            <DatePicker
+                                value="{invoiceExternal>/InvoiceDate}"
+                                valueFormat="yyyy-MM-dd"
+                                displayFormat="dd-MM-yyyy"
+                            />
+
+                            <Label text="Método de Pago"/>
+                            <Select
+                                selectedKey="{invoiceExternal>/PaymentMethod}"
+                            >
+                                <core:Item
+                                    key="transferencia"
+                                    text="Transferencia"
+                                />
+                                <core:Item
+                                    key="efectivo"
+                                    text="Efectivo"
+                                />
+                            </Select>
+
+                            <Label text="Moneda"/>
+                            <Select
+                                selectedKey="{invoiceExternal>/Currency}"
+                            >
+                                <core:Item
+                                    key="EUR"
+                                    text="EUR"
+                                />
+                                <core:Item
+                                    key="MXN"
+                                    text="MXN"
+                                />
+                            </Select>
+
+                        </form:SimpleForm>
+                    </content>
+                </Panel>
+
+            </VBox>
+        </content>
+
+        <beginButton>
+            <Button
+                text="Cerrar"
+                press=".onCerrarDialog"
+            />
+        </beginButton>
+
+    </Dialog>
+</core:FragmentDefinition>

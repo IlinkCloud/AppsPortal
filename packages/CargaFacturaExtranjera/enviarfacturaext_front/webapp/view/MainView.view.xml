@@ -1,342 +1,164 @@
-<mvc:View controllerName="enviarfacturaextfront.controller.MainView"
+<mvc:View
+    controllerName="enviarfacturaextfront.controller.MainView"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
     xmlns:form="sap.ui.layout.form"
-    >
+>
     <Page
-        id="page"
+        showHeader="true"
         title="{i18n>title}"
+        showFooter="false"
+        showNavButton="false"
+        class="sapUiContentPadding"
     >
         <headerContent>
-            <DatePicker
-                id="dpFechaDesde"
-                width="10rem"
-                placeholder="Desde"
-            />
-            <DatePicker
-                id="dpFechaHasta"
-                width="10rem"
-                placeholder="Hasta"
-            />
+            <FlexBox
+                width="100%"
+                alignItems="Start"
+                justifyContent="SpaceBetween"
+            >
+                <items>
+                    <Toolbar>
+                        <ToolbarSpacer />
+                        <Label text="{i18n>facturas.de}" />
+                        <DatePicker
+                            id="startDatePicker"
+                            width="auto"
+                            change="onChangeDate"
+                            displayFormat="dd/MM/yyyy"
+                            valueFormat="yyyy-MM-dd"
+                            placeholder="dd/MM/yyyy"
+                        />
+                        <Label text="{i18n>facturas.hasta}" />
+                        <DatePicker
+                            id="endDatePicker"
+                            width="auto"
+                            change="onChangeDate"
+                            displayFormat="dd/MM/yyyy"
+                            valueFormat="yyyy-MM-dd"
+                            placeholder="dd/MM/yyyy"
+                        />
+                    </Toolbar>
+                </items>
+            </FlexBox>
         </headerContent>
 
         <content>
-            <!-- Tabla Resumen de Cuentas -->
             <Table
-                id="cuentasTable"
-                inset="false"
-                growing="true"
-                growingScrollToLoad="true"
+                id="docMatList"
+                items="{path: 'documents>/results'}"
                 mode="MultiSelect"
+                growing="true"
+                selectionChange="onTableSelectionChange"
             >
                 <headerToolbar>
-                    <Toolbar id="_IDGenToolbar1">
-                        <Title
-                            id="_IDGenTitle1"
-                            text="Entradas de Mercancía"
-                            level="H2"
-                        />
-                        <ToolbarSpacer id="_IDGenToolbarSpacer2" />
-                        <SearchField
-                            id="_IDGenSearchField"
-                            width="20%"
-                            placeholder="Buscar..."
-                            liveChange=".onSearch"
-                        />
-
-                        <Select
-                            id="_IDGenSelect"
-                            change=".onSearchFieldChange"
-                        >
-                            <core:Item
-                                id="_IDGenItem1"
-                                key=""
-                                text="Num. de Entrega"
+                    <Toolbar>
+                        <content>
+                            <Title text="{i18n>facturas.entradas}" />
+                            <ToolbarSpacer />
+                            <SearchField
+                                id="searchField"
+                                width="20%"
+                                placeholder="{i18n>facturas.buscar}"
+                                liveChange="onSearch"
+                                search="onSearch"
                             />
-                            <core:Item
-                                id="_IDGenItem2"
-                                key=""
-                                text="Orden de Compra"
+                            <Button
+                                icon="sap-icon://upload"
+                                text="{i18n>facturas.cargarFactura}"
+                                type="Emphasized"
+                                press="uploadButton"
                             />
-                            <core:Item
-                                id="_IDGenItem3"
-                                key=""
-                                text="Cliente"
+                            <Button
+                                icon="sap-icon://discussion"
+                                text="{i18n>facturas.enviarAclaracion}"
+                                type="Emphasized"
+                                press="aclaracionButton"
                             />
-                            <core:Item
-                                id="_IDGenItem4"
-                                key=""
-                                text="Referencia"
-                            />
-                        </Select>
-                        <Button
-                            icon="sap-icon://action"
-                            text="Enviar Factura"
-                            type="Emphasized"
-                            id="bEnviarFactura"
-                            press=".onEnviarFactura"
-                        />
-                        <Button
-                            icon="sap-icon://discussion-2"
-                            text="Enviar Aclaración"
-                            type="Emphasized"
-                            id="bEnviarAclaracion"
-                            press=".onEnviarAclaracion"
-                        />
+                        </content>
                     </Toolbar>
                 </headerToolbar>
 
                 <columns>
-                    <Column
-                        id="_IDGenColumn"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText1"
-                            text="Num. de Entrega"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.numEntrega}" />
                     </Column>
-                    <Column id="_IDGenColumn1">
-                        <Text
-                            id="_IDGenText2"
-                            text="Orden de Compra"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.ordenCompra}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn2"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText3"
-                            text="Nombre del Proveedor"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.itemPedido}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn3"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText4"
-                            text="Cliente"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.posicionMaterial}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn4"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText5"
-                            text="Referencia"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.nombreProveedor}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn5"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText6"
-                            text="Clase de Condición"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.cliente}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn6"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText7"
-                            text="Fecha de Entrega"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.referencia}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn7"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    >
-                        <Text
-                            id="_IDGenText8"
-                            text="Importe"
-                        />
+                    <Column>
+                        <Text text="{i18n>facturas.claseCondicion}" />
                     </Column>
-                    <Column
-                        id="_IDGenColumn8"
-                        demandPopin="true"
-                        minScreenWidth="Tablet"
-                    />
+                    <Column>
+                        <Text text="{i18n>facturas.fechaDocumento}" />
+                    </Column>
+                    <Column>
+                        <Text text="{i18n>facturas.importePedido}" />
+                    </Column>
+                    <Column>
+                        <Text text="{i18n>facturas.importeEM}" />
+                    </Column>
                 </columns>
 
                 <items>
-                    <ColumnListItem id="_IDGenColumnListItem1">
+                    <ColumnListItem
+                        highlight="{= ${documents>isBlockedForSelection} ? 'Error' : 'None' }"
+                        type="{= ${documents>isBlockedForSelection} ? 'Inactive' : 'Active' }"
+                    >
                         <cells>
-                            <Link
-                                id="_IDGenStatus"
-                                text="5000061582"
-                            />
-
+                            <Text text="{documents>DeliveryNumber}" />
+                            <Text text="{documents>PurchaseOrder}" />
+                            <Text text="{documents>PurchaseOrderItem}" />
+                            <Text text="{documents>MaterialItem}" />
+                            <Text text="{documents>SupplierName}" />
+                            <Text text="{documents>Customer}" />
+                            <Text text="{documents>Reference}" />
+                            <Text text="{documents>ConditionType}" />
                             <Text
-                                id="_IDGenText13"
-                                text="4500000044"
+                                text="{path: 'documents>DocumentDate', type:'sap.ui.model.type.Date', formatOptions:{style:'medium'}}"
                             />
-                            <Text
-                                id="_IDGenLink"
-                                text="BALLESTRA SPA"
+                            <ObjectNumber
+                                number="{documents>PurchaseOrderAmount}"
+                                unit="{documents>DocumentCurrency}"
                             />
-                            <Text
-                                id="_IDGenText15"
-                                text="Sánchez y Martín"
-                            />
-                            <Text
-                                id="_IDGenText16"
-                                text=""
-                            />
-                            <Text
-                                id="_IDGenText17"
-                                text=""
-                            />
-                            <Text
-                                id="_IDGenText18"
-                                text="22-10-2025"
-                            />
-                            <Text
-                                id="_IDGenText19"
-                                text="2,741.20 EUR"
+                            <ObjectNumber
+                                number="{documents>GoodsReceiptAmount}"
+                                unit="{documents>DocumentCurrency}"
                             />
                         </cells>
                     </ColumnListItem>
                 </items>
             </Table>
-            <Dialog
-                id="dlgFacturaExterna"
-                title="Enviar Factura Externa"
-                stretchOnPhone="true"
-                contentWidth="40rem"
-                xmlns:core="sap.ui.core"
-                xmlns:form="sap.ui.layout.form"
-            >
-                <content>
-                    <!-- Panel formulario -->
-                    <Panel
-                        id="_IDGenPanel"
-                        headerText="Detalle de Factura"
-                    >
-                        <content>
-                            <form:SimpleForm
-                                id="_IDGenSimpleForm"
-                                editable="true"
-                                layout="ResponsiveGridLayout"
-                            >
-                                <Label
-                                    id="_IDGenLabel"
-                                    text="Número de Factura"
-                                />
-                                <Input
-                                    id="_IDGenInput"
-                                    value="123456"
-                                />
 
-                                <Label
-                                    id="_IDGenLabel1"
-                                    text="Subtotal"
-                                />
-                                <Input
-                                    id="_IDGenInput1"
-                                    value="1000.00"
-                                />
 
-                                <Label
-                                    id="_IDGenLabel2"
-                                    text="Total"
-                                />
-                                <Input
-                                    id="_IDGenInput2"
-                                    value="1160.00"
-                                />
 
-                                <Label
-                                    id="_IDGenLabel3"
-                                    text="Fecha Factura"
-                                />
-                                <DatePicker
-                                    id="_IDGenDatePicker"
-                                    value="2025-11-04"
-                                    displayFormat="dd-MM-yyyy"
-                                />
 
-                                <Label
-                                    id="_IDGenLabel4"
-                                    text="Método de Pago"
-                                />
-                                <Select id="_IDGenSelect1">
-                                    <core:Item
-                                        id="_IDGenItem"
-                                        key="transferencia"
-                                        text="Transferencia"
-                                    />
-                                    <core:Item
-                                        id="_IDGenItem5"
-                                        key="efectivo"
-                                        text="Efectivo"
-                                    />
-                                </Select>
 
-                                <Label
-                                    id="_IDGenLabel5"
-                                    text="Moneda"
-                                />
-                                <Select id="_IDGenSelect2">
-                                    <core:Item
-                                        id="_IDGenItem6"
-                                        key="eur"
-                                        text="EUR"
-                                    />
-                                    <core:Item
-                                        id="_IDGenItem7"
-                                        key="mxn"
-                                        text="MXN"
-                                    />
-                                </Select>
-                            </form:SimpleForm>
-                        </content>
-                    </Panel>
 
-                    <!-- Panel con anexos -->
-                    <Panel
-                        id="_IDGenPanel1"
-                        headerText="Anexos (0)"
-                    >
-                        <content>
-                            <VBox
-                                id="_IDGenVBox"
-                                class="sapUiSmallMargin"
-                            >
-                                <Text
-                                    id="_IDGenText"
-                                    text="Ningún archivo seleccionado"
-                                />
-                                <Button
-                                    id="_IDGenButton1"
-                                    text="+ Añadir"
-                                    type="Transparent"
-                                />
-                            </VBox>
-                        </content>
-                    </Panel>
-                </content>
 
-                <beginButton>
-                    <Button
-                        id="_IDGenButton2"
-                        text="Cerrar"
-                        press=".onCerrarDialog"
-                    />
-                </beginButton>
-            </Dialog>
+
+
+
+
+
+
+
 
             <Dialog
                 id="dlgAclaracion"
@@ -404,6 +226,9 @@
                     />
                 </endButton>
             </Dialog>
+
+
+
         </content>
     </Page>
 </mvc:View>

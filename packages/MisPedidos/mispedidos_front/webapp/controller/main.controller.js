@@ -8,12 +8,51 @@ sap.ui.define([
 
     return Controller.extend("mispedidosfront.controller.main", {
         onInit() {
+
+            this._oUserAccessModel = new sap.ui.model.odata.v4.ODataModel({
+                serviceUrl: "/odata/v4/invitacion/",
+                synchronizationMode: "None",
+                operationMode: "Server",
+                autoExpandSelect: true
+            });
+
+            this._pInitialization = this._initializeApp();
+            /*
             this.getView().addEventDelegate({
                 onBeforeShow: function (oEvent) {
                     this.initDatePickers();
                     this.getOrders();
                 }
             }, this);
+            */
+        },
+        _initializeApp: async function () {
+            const oView = this.getView();
+
+            try {
+                oView.setBusy(true);
+
+                // Validar el registro del usuario en IAS
+                await this.validateUserAccess();
+
+                // Inicializar controles
+                this.initDatePickers();
+
+                // Consultar pedidos con la información ya actualizada
+                await this.getOrders();
+
+            } catch (error) {
+                console.error("[Initialization] Error:", error);
+            } finally {
+                oView.setBusy(false);
+            }
+        },
+        validateUserAccess: async function () {
+            const oOperation = this._oUserAccessModel.bindContext("/ValidateUserAccess(...)");
+            await oOperation.invoke();
+            const oResult = oOperation.getBoundContext().getObject();
+            console.log("[ValidateUserAccess] Respuesta:", oResult);
+            return oResult;
         },
         getOrders: function () {
 
