@@ -502,8 +502,10 @@ sap.ui.define([
                                 } else if (tipo === "text/xml" || tipo === "application/xml") {
                                     xmlFile = file;
                                     const reader = new FileReader();
+                                    //reader.onload = async function (e) {
+                                    //    const xmlBase64 = btoa(unescape(encodeURIComponent(e.target.result)));
                                     reader.onload = async function (e) {
-                                        const xmlBase64 = btoa(unescape(encodeURIComponent(e.target.result)));
+                                        const xmlBase64 = e.target.result.split(",")[1];
                                         const documentDate = oFirstData.DocumentDate
                                             ? oFirstData.DocumentDate.toISOString().split('T')[0]
                                             : null;
@@ -613,7 +615,8 @@ sap.ui.define([
                                             BusyIndicator.hide();
                                         }
                                     };
-                                    reader.readAsBinaryString(file);
+                                    //reader.readAsBinaryString(file);
+                                    reader.readAsDataURL(file);
                                 }
                             }
                             oController._oUploadDialog.close();
@@ -1063,11 +1066,13 @@ sap.ui.define([
 
                 const data = await res.json();
 
+                const sRealInvoiceStatus = data.SupplierInvoiceStatus;
+
                 // === Adjuntar PDF y XML ===
                 const [oMessagePDF, oMessageXML] = await Promise.allSettled([
-                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
+                    this.postLogAttachmentPDF(pdfFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sRealInvoiceStatus)
                         .catch(err => ({ message: `PDF: ${err.message}`, success: false })),
-                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sInvoiceStatus)
+                    this.postLogAttachmentXML(xmlFile, data.SupplierInvoice, datosCFDI.SUPPLIER, sRealInvoiceStatus)
                         .catch(err => ({ message: `XML: ${err.message}`, success: false }))
                 ]);
 
