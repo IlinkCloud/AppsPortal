@@ -1,733 +1,270 @@
-<mvc:View
-    controllerName="mispedidosfront.controller.main"
-    height="100%"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m"
->
-    <SplitApp
-        id="SplitApp"
-        initialMaster="masterView"
-        initialDetail="detailView"
-    >
-        <masterPages>
-            <Page
-                id="masterView"
-                title="{i18n>order.title}"
-            >
-            <!-- 
+<mvc:View controllerName="mispedidosfront.controller.main" height="100%" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m">
+	<SplitApp id="SplitApp" initialMaster="masterView" initialDetail="detailView">
+		<masterPages>
+			<Page id="masterView" title="{i18n>order.title}">
+				<!-- 
                 showNavButton="true"
                 showSubHeader="false"
                 navButtonPress="onNavBack" -->
-                <VBox>
-                    <FlexBox
-                        width="100%"
-                        height="100vh"
-                        justifyContent="Start"
-                        xmlns="sap.m"
-                        xmlns:core="sap.ui.core"
-                    >
-                        <items>
-                            <FlexBox
-                                height="100vh"
-                                alignItems="Start"
-                                justifyContent="Start"
-                            >
-                                <items>
-                                    <ScrollContainer
-                                        width="auto"
-                                        horizontal="false"
-                                        vertical="true"
-                                        focusable="true"
-                                    >
-                                        <List
-                                            id="documentList"
-                                            headerText="Header"
-                                            backgroundDesign="Solid"
-                                            showSeparators="All"
-                                            growing="false"
-                                            growingThreshold="10"
-                                            growingScrollToLoad="true"
-                                            items="{
+				<VBox>
+					<FlexBox width="100%" height="100vh" justifyContent="Start" xmlns="sap.m" xmlns:core="sap.ui.core">
+						<items>
+							<FlexBox height="100vh" alignItems="Start" justifyContent="Start">
+								<items>
+									<ScrollContainer width="auto" horizontal="false" vertical="true" focusable="true">
+										<List id="documentList" headerText="Header" backgroundDesign="Solid" showSeparators="All" growing="false" growingThreshold="10" growingScrollToLoad="true" items="{
 												path : 'orders>/value',
 												sorter : { path : 'PurchaseOrder', descending : false }
-                        					}"
-                                        >
-                                            <infoToolbar>
-                                                <Toolbar
-                                                    width="100%"
-                                                    design="Auto"
-                                                    visible="false"
-                                                >
-                                                    <content>
-                                                        <Label
-                                                            text="Label"
-                                                            width="100%"
-                                                            textAlign="Begin"
-                                                        />
-                                                    </content>
-                                                </Toolbar>
-                                            </infoToolbar>
-
-                                            <headerToolbar>
-                                                <Toolbar design="Solid">
-                                                    <content>
-                                                        <SearchField
-                                                            placeholder="{i18n>order.search}"
-                                                            showSearchButton="true"
-                                                            search="providersSearch"
-                                                            width="100%"
-                                                        />
-                                                        <Select
-                                                            id="selectFilterMPed"
-                                                        >
-                                                            <items>
-                                                                <core:Item
-                                                                    key="PurchaseOrder"
-                                                                    text="{i18n>order.byOrder}"
-                                                                />
-                                                                <core:Item
-                                                                    key="Supplier"
-                                                                    text="{i18n>order.supplier}"
-                                                                />
-                                                            </items>
-                                                        </Select>
-                                                    </content>
-                                                </Toolbar>
-                                            </headerToolbar>
-
-                                            <items>
-                                                <ObjectListItem
-                                                    title="{orders>PurchaseOrder}"
-                                                    number="{
+                        					}">
+											<infoToolbar>
+												<Toolbar width="100%" design="Auto" visible="false">
+													<content>
+														<Label text="Label" width="100%" textAlign="Begin"/>
+													</content>
+												</Toolbar>
+											</infoToolbar>
+											<headerToolbar>
+												<Toolbar design="Solid">
+													<content>
+														<SearchField placeholder="{i18n>order.search}" showSearchButton="true" search="providersSearch" width="100%"/>
+														<Select id="selectFilterMPed">
+															<items>
+																<core:Item key="PurchaseOrder" text="{i18n>order.byOrder}"/>
+																<core:Item key="Supplier" text="{i18n>order.supplier}"/>
+                                                                <core:Item key="SupplierName" text="{i18n>order.supplierName}"/>
+															</items>
+														</Select>
+													</content>
+												</Toolbar>
+											</headerToolbar>
+											<items>
+												<ObjectListItem title="{orders>PurchaseOrder}" number="{
 														parts: [
 															{path: 'orders>TotalNetAmount'},
 															{path: 'orders>DocumentCurrency'}
 														],
 													type: 'sap.ui.model.type.Currency',
 													formatOptions: { showMeasure: false }
-													}"
-                                                    numberUnit="{orders>DocumentCurrency}"
-                                                    type="Active"
-                                                    press="orderDetails"
-                                                >
-                                                    <attributes>
-                                                        <ObjectAttribute
-                                                            text="{path: 'orders>PurchaseOrderDate', formatter: '.formatDate'}"
-                                                        />
-                                                        <ObjectAttribute
-                                                            text="{orders>Name}"
-                                                        />
-                                                    </attributes>
-
-                                                    <firstStatus>
-                                                        <ObjectStatus
-                                                            text=""
-                                                            state="None"
-                                                        />
-                                                    </firstStatus>
-                                                </ObjectListItem>
-                                            </items>
-                                        </List>
-                                    </ScrollContainer>
-                                </items>
-                            </FlexBox>
-                        </items>
-                    </FlexBox>
-                </VBox>
-            </Page>
-        </masterPages>
-
-        <detailPages>
-            <Page id="detailView" >
-
-                <customHeader>
-                    <OverflowToolbar>
-                        <ToolbarSpacer/>
-                        <Label text="{i18n>order.from}" />
-                        <DatePicker id="startDatePicker" width="auto" change="onChangeDate" />
-                        <Label text="{i18n>order.to}" />
-                        <DatePicker id="endDatePicker" width="auto" change="onChangeDate" />
-                    </OverflowToolbar>
-                </customHeader>
-                
-                <ObjectListItem
-                    title="{oDetails>/PurchaseOrder}"
-                    icon="sap-icon://monitor-payments"
-					number="{parts: [{path: 'oDetails>/TotalNetAmount'}, {path: 'oDetails>/DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                    numberUnit="{oDetails>/DocumentCurrency}"
-                    numberState="None"
-                    selected="false"
-                >
-                    <attributes>
-                        <ObjectAttribute
-                            title="{i18n>order.supplier}"
-                            text="{oDetails>/Supplier}"
-                            active="false"
-                        />
-                        <ObjectAttribute
-                            title="{i18n>order.date}"
-                            text="{path: 'oDetails>/PurchaseOrderDate', formatter: '.formatDate'}"
-                            active="false"
-                        />
-                        <!--<ObjectAttribute binding="" text="3" active="true" press="contactForm" id="H_3"/>-->
-                    </attributes>
-                    <firstStatus>
-                        <ObjectStatus
-                            title="{i18n>order.type}"
-                            text="{oDetails>/ExchangeRate}"
-                            state="Success"
-                        />
-                    </firstStatus>
-                    <secondStatus>
-                        <ObjectStatus
-                            title="{i18n>order.condition}"
-                            text="{oDetails>/PaymentTermsTxt}"
-                            state="None"
-                        />
+													}" numberUnit="{orders>DocumentCurrency}" type="Active" press="orderDetails">
+													<attributes>
+														<ObjectAttribute text="{path: 'orders>PurchaseOrderDate', formatter: '.formatDate'}"/>
+														<ObjectAttribute text="{orders>SupplierName}"/>
+													</attributes>
+													<firstStatus>
+														<ObjectStatus text="" state="None"/>
+													</firstStatus>
+												</ObjectListItem>
+											</items>
+										</List>
+									</ScrollContainer>
+								</items>
+							</FlexBox>
+						</items>
+					</FlexBox>
+				</VBox>
+			</Page>
+		</masterPages>
+		<detailPages>
+			<Page id="detailView">
+				<customHeader>
+					<OverflowToolbar>
+						<ToolbarSpacer/>
+						<Label text="{i18n>order.from}"/>
+						<DatePicker id="startDatePicker" width="auto" change="onChangeDate"/>
+						<Label text="{i18n>order.to}"/>
+						<DatePicker id="endDatePicker" width="auto" change="onChangeDate"/>
+					</OverflowToolbar>
+				</customHeader>
+				<ObjectListItem title="{oDetails>/PurchaseOrder}" icon="sap-icon://monitor-payments" number="{parts: [{path: 'oDetails>/TotalNetAmount'}, {path: 'oDetails>/DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" numberUnit="{oDetails>/DocumentCurrency}" numberState="None" selected="false">
+					<attributes>
+						<ObjectAttribute title="{i18n>order.supplier}" text="{oDetails>/Supplier}" active="false"/>
+						<ObjectAttribute title="{i18n>order.supplierName}" text="{oDetails>/SupplierName}" active="false"/>
+						<ObjectAttribute title="{i18n>order.date}" text="{path: 'oDetails>/PurchaseOrderDate', formatter: '.formatDate'}" active="false"/>
+						<!--<ObjectAttribute binding="" text="3" active="true" press="contactForm" id="H_3"/>-->
+					</attributes>
+					<firstStatus>
+						<ObjectStatus title="{i18n>order.type}" text="{oDetails>/ExchangeRate}" state="Success"/>
+					</firstStatus>
+					<secondStatus>
+						<ObjectStatus title="{i18n>order.condition}" text="{oDetails>/PaymentTermsTxt}" state="None"/>
 						<!-- text="{path: 'oDetails>/PaymentTerms', formatter: '.payCondition'}" -->
-                    </secondStatus>
-                </ObjectListItem>
-
-                <IconTabBar
-                    expandable="true"
-                    expanded="true"
-                    applyContentPadding="true"
-                    backgroundDesign="Translucent"
-                    upperCase="false"
-                    visible="true"
-                    selectedKey="Ok"
-                >
-                    <items>
-                        <IconTabFilter
-                            icon="sap-icon://open-folder"
-                            iconColor="Positive"
-                            text="{i18n>order.open}"
-                            count="{iActive>/length}"
-                            design="Vertical"
-                            showAll="false"
-                            textDirection="Inherit"
-                            enabled="true"
-                            visible="true"
-                            iconDensityAware="false"
-                            id="openCount"
-                        >
-                            <content>
-                                <Table
-                                    width="100%"
-                                    noDataText="{i18n>order.noData}"
-                                    mode="None"
-                                    showSeparators="All"
-                                    growing="true"
-                                    growingThreshold="20"
-                                    growingScrollToLoad="true"
-                                    items="{iActive>/table}"
-                                    id="reloadTableO"
-                                >
-                                    <infoToolbar />
-                                    <headerToolbar />
-                                    <columns>
-                                        <Column width="auto">
-                                            <header>
-                                                <Text text="{i18n>order.position}" />
-                                            </header>
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Phone"
-                                            demandPopin="false"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.product}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.quantity}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.price}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.dateE}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                    </columns>
-                                    <items>
-                                        <ColumnListItem type="Active">
-                                            <cells>
-                                                <Text text="{iActive>PurchaseOrderItem}" />
-                                                <ObjectIdentifier
-                                                    title="{iActive>PurchaseOrderItemText}"
-                                                    text="{iActive>Material}"
-                                                    titleActive="false"
-                                                    visible="true"
-                                                />
-                                                <ObjectNumber
-                                                    xmlns="sap.m"
-                                                    number="{parts: [{path: 'iActive>OrderQuantity'}, {path: 'iActive>PurchaseOrderQuantityUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{iActive>PurchaseOrderQuantityUnit}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <ObjectNumber
-                                                    xmlns="sap.m"
-                                                    number="{parts: [{path: 'iActive>NetPriceAmount'}, {path: 'oDetails>/DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{oDetails>/DocumentCurrency}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <Text
-                                                    text="{path: 'iActive>DeliveryDate', formatter: '.formatDate'}"
-                                                />
-                                            </cells>
-                                        </ColumnListItem>
-                                    </items>
-                                </Table>
-                            </content>
-                        </IconTabFilter>
-                        <IconTabSeparator
-                            icon=""
-                            iconDensityAware="false"
-                        />
-                        <IconTabFilter
-                            icon="sap-icon://shipping-status"
-                            iconColor="Default"
-                            text="{i18n>order.delivered}"
-                            count="{iDeliver>/length}"
-                            design="Vertical"
-                            showAll="false"
-                            textDirection="Inherit"
-                            enabled="true"
-                            visible="true"
-                            iconDensityAware="false"
-                            id="deliveryCount"
-                        >
-                            <content>
-                                <Table
-                                    width="100%"
-                                    noDataText="{i18n>order.noData}"
-                                    mode="None"
-                                    showSeparators="All"
-                                    growing="true"
-                                    growingThreshold="20"
-                                    growingScrollToLoad="true"
-                                    items="{iDeliver>/table}"
-                                    id="reloadTableD"
-                                >
-                                    <infoToolbar>
-                                        <Toolbar
-                                            width="100%"
-                                            height="auto"
-                                            design="Auto"
-                                            visible="false"
-                                            enabled="true"
-                                        >
-                                            <content>
-                                                <Label
-                                                    text="Label"
-                                                    design="Standard"
-                                                    width="100%"
-                                                    required="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </content>
-                                        </Toolbar>
-                                    </infoToolbar>
-                                    <headerToolbar />
-                                    <columns>
-                                        <Column width="auto">
-                                            <header>
-                                                <Text text="{i18n>order.position}" />
-                                            </header>
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Phone"
-                                            demandPopin="false"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.product}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.quantity}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.price}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="End"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.dateE}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.mercancy}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                    </columns>
-                                    <items>
-                                        <ColumnListItem type="Active">
-                                            <cells>
-                                                <Text
-                                                    text="{iDeliver>PurchaseOrderItem}"
-                                                />
-                                                <ObjectIdentifier
-                                                    title="{iDeliver>DocumentItemText}"
-                                                    text="{iDeliver>Material}"
-                                                    titleActive="false"
-                                                    visible="true"
-                                                />
-                                                <ObjectNumber
-                                                    number="{parts: [{path: 'iDeliver>QuantityInEntryUnit'}, {path: 'iDeliver>EntryUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{iDeliver>EntryUnit}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <ObjectNumber
-                                                    number="{parts: [{path: 'iDeliver>NetPriceAmount'}, {path: 'iDeliver>DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{iDeliver>DocumentCurrency}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <Text
-                                                    text="{path: 'iDeliver>CreationDate', formatter: '.formatDate'}"
-                                                />
-                                                <ObjectAttribute
-                                                    binding="{iDeliver>PurchaseOrderItem}"
-                                                    text="{i18n>order.documents}"
-                                                    active="true"
-                                                    press="matDocuments"
-                                                />
-                                            </cells>
-                                        </ColumnListItem>
-                                    </items>
-                                </Table>
-                            </content>
-                        </IconTabFilter>
-                        <IconTabSeparator
-                            icon=""
-                            iconDensityAware="false"
-                        />
-                        <IconTabFilter
-                            icon="sap-icon://check-availability"
-                            iconColor="Default"
-                            text="{i18n>order.invoiced}"
-                            count="{iInvoiced>/length}"
-                            design="Vertical"
-                            showAll="false"
-                            textDirection="Inherit"
-                            enabled="true"
-                            visible="true"
-                            iconDensityAware="false"
-                            id="invoicedCount"
-                        >
-                            <content>
-                                <Table
-                                    width="100%"
-                                    noDataText="{i18n>order.noData}"
-                                    mode="None"
-                                    showSeparators="All"
-                                    growing="true"
-                                    growingThreshold="20"
-                                    growingScrollToLoad="true"
-                                    items="{iInvoiced>/table}"
-                                    id="reloadTableF"
-                                >
-                                    <infoToolbar>
-                                        <Toolbar
-                                            width="100%"
-                                            height="auto"
-                                            design="Auto"
-                                            visible="false"
-                                            enabled="true"
-                                        >
-                                            <content>
-                                                <Label
-                                                    text="Label"
-                                                    design="Standard"
-                                                    width="100%"
-                                                    required="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </content>
-                                        </Toolbar>
-                                    </infoToolbar>
-                                    <headerToolbar />
-                                    <columns>
-                                        <Column width="auto">
-                                            <header>
-                                                <Text text="{i18n>order.position}"/>
-                                            </header>
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Phone"
-                                            demandPopin="false"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.product}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.quantity}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.price}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                        <Column
-                                            width="auto"
-                                            hAlign="Left"
-                                            vAlign="Top"
-                                            minScreenWidth="Tablet"
-                                            demandPopin="true"
-                                            popinDisplay="Inline"
-                                            mergeDuplicates="false"
-                                        >
-                                            <header>
-                                                <Text
-                                                    text="{i18n>order.date}"
-                                                    width="auto"
-                                                    maxLines="1"
-                                                    wrapping="false"
-                                                    textAlign="Begin"
-                                                    textDirection="Inherit"
-                                                />
-                                            </header>
-                                            <footer />
-                                        </Column>
-                                    </columns>
-                                    <items>
-                                        <ColumnListItem type="Active">
-                                            <cells>
-                                                <Text
-                                                    text="{iInvoiced>PurchaseOrderItem}"
-                                                />
-                                                <ObjectIdentifier
-                                                    title="{iInvoiced>InvoiceItemText}"
-                                                    text="{iInvoiced>Material}"
-                                                    titleActive="false"
-                                                    visible="true"
-                                                />
-                                                <ObjectNumber
-                                                    xmlns="sap.m"
-                                                    number="{parts: [{path: 'iInvoiced>QuantityInPurchaseOrderUnit'}, {path: 'iInvoiced>PurchaseOrderQuantityUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{iInvoiced>PurchaseOrderQuantityUnit}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <ObjectNumber
-                                                    xmlns="sap.m"
-                                                    number="{parts: [{path: 'iInvoiced>SupplierInvoiceItemAmount'}, {path: 'iInvoiced>DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}"
-                                                    unit="{iInvoiced>DocumentCurrency}"
-                                                    emphasized="false"
-                                                    state="None"
-                                                />
-                                                <Text
-                                                    text="{path: 'iInvoiced>CreationDate', formatter: '.formatDate'}"
-                                                />
-                                            </cells>
-                                        </ColumnListItem>
-                                    </items>
-                                </Table>
-                            </content>
-                        </IconTabFilter>
-                    </items>
-                    <!--
+					</secondStatus>
+				</ObjectListItem>
+				<IconTabBar expandable="true" expanded="true" applyContentPadding="true" backgroundDesign="Translucent" upperCase="false" visible="true" selectedKey="Ok">
+					<items>
+						<IconTabFilter icon="sap-icon://open-folder" iconColor="Positive" text="{i18n>order.open}" count="{iActive>/length}" design="Vertical" showAll="false" textDirection="Inherit" enabled="true" visible="true" iconDensityAware="false" id="openCount">
+							<content>
+								<Table width="100%" noDataText="{i18n>order.noData}" mode="None" showSeparators="All" growing="true" growingThreshold="20" growingScrollToLoad="true" items="{iActive>/table}" id="reloadTableO">
+									<infoToolbar/>
+									<headerToolbar/>
+									<columns>
+										<Column width="auto">
+											<header>
+												<Text text="{i18n>order.position}"/>
+											</header>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Phone" demandPopin="false" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.product}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.quantity}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.price}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.dateE}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+									</columns>
+									<items>
+										<ColumnListItem type="Active">
+											<cells>
+												<Text text="{iActive>PurchaseOrderItem}"/>
+												<ObjectIdentifier title="{iActive>PurchaseOrderItemText}" text="{iActive>Material}" titleActive="false" visible="true"/>
+												<ObjectNumber xmlns="sap.m" number="{parts: [{path: 'iActive>OrderQuantity'}, {path: 'iActive>PurchaseOrderQuantityUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{iActive>PurchaseOrderQuantityUnit}" emphasized="false" state="None"/>
+												<ObjectNumber xmlns="sap.m" number="{parts: [{path: 'iActive>NetPriceAmount'}, {path: 'oDetails>/DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{oDetails>/DocumentCurrency}" emphasized="false" state="None"/>
+												<Text text="{path: 'iActive>DeliveryDate', formatter: '.formatDate'}"/>
+											</cells>
+										</ColumnListItem>
+									</items>
+								</Table>
+							</content>
+						</IconTabFilter>
+						<IconTabSeparator icon="" iconDensityAware="false"/>
+						<IconTabFilter icon="sap-icon://shipping-status" iconColor="Default" text="{i18n>order.delivered}" count="{iDeliver>/length}" design="Vertical" showAll="false" textDirection="Inherit" enabled="true" visible="true" iconDensityAware="false" id="deliveryCount">
+							<content>
+								<Table width="100%" noDataText="{i18n>order.noData}" mode="None" showSeparators="All" growing="true" growingThreshold="20" growingScrollToLoad="true" items="{iDeliver>/table}" id="reloadTableD">
+									<infoToolbar>
+										<Toolbar width="100%" height="auto" design="Auto" visible="false" enabled="true">
+											<content>
+												<Label text="Label" design="Standard" width="100%" required="false" textAlign="Begin" textDirection="Inherit"/>
+											</content>
+										</Toolbar>
+									</infoToolbar>
+									<headerToolbar/>
+									<columns>
+										<Column width="auto">
+											<header>
+												<Text text="{i18n>order.position}"/>
+											</header>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Phone" demandPopin="false" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.product}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.quantity}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.price}" width="auto" maxLines="1" wrapping="false" textAlign="End" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.dateE}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.mercancy}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+									</columns>
+									<items>
+										<ColumnListItem type="Active">
+											<cells>
+												<Text text="{iDeliver>PurchaseOrderItem}"/>
+												<ObjectIdentifier title="{iDeliver>DocumentItemText}" text="{iDeliver>Material}" titleActive="false" visible="true"/>
+												<ObjectNumber number="{parts: [{path: 'iDeliver>QuantityInEntryUnit'}, {path: 'iDeliver>EntryUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{iDeliver>EntryUnit}" emphasized="false" state="None"/>
+												<ObjectNumber number="{parts: [{path: 'iDeliver>NetPriceAmount'}, {path: 'iDeliver>DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{iDeliver>DocumentCurrency}" emphasized="false" state="None"/>
+												<Text text="{path: 'iDeliver>CreationDate', formatter: '.formatDate'}"/>
+												<ObjectAttribute binding="{iDeliver>PurchaseOrderItem}" text="{i18n>order.documents}" active="true" press="matDocuments"/>
+											</cells>
+										</ColumnListItem>
+									</items>
+								</Table>
+							</content>
+						</IconTabFilter>
+						<IconTabSeparator icon="" iconDensityAware="false"/>
+						<IconTabFilter icon="sap-icon://check-availability" iconColor="Default" text="{i18n>order.invoiced}" count="{iInvoiced>/length}" design="Vertical" showAll="false" textDirection="Inherit" enabled="true" visible="true" iconDensityAware="false" id="invoicedCount">
+							<content>
+								<Table width="100%" noDataText="{i18n>order.noData}" mode="None" showSeparators="All" growing="true" growingThreshold="20" growingScrollToLoad="true" items="{iInvoiced>/table}" id="reloadTableF">
+									<infoToolbar>
+										<Toolbar width="100%" height="auto" design="Auto" visible="false" enabled="true">
+											<content>
+												<Label text="Label" design="Standard" width="100%" required="false" textAlign="Begin" textDirection="Inherit"/>
+											</content>
+										</Toolbar>
+									</infoToolbar>
+									<headerToolbar/>
+									<columns>
+										<Column width="auto">
+											<header>
+												<Text text="{i18n>order.position}"/>
+											</header>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Phone" demandPopin="false" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.product}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.quantity}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.price}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+										<Column width="auto" hAlign="Left" vAlign="Top" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Inline" mergeDuplicates="false">
+											<header>
+												<Text text="{i18n>order.date}" width="auto" maxLines="1" wrapping="false" textAlign="Begin" textDirection="Inherit"/>
+											</header>
+											<footer/>
+										</Column>
+									</columns>
+									<items>
+										<ColumnListItem type="Active">
+											<cells>
+												<Text text="{iInvoiced>PurchaseOrderItem}"/>
+												<ObjectIdentifier title="{iInvoiced>InvoiceItemText}" text="{iInvoiced>Material}" titleActive="false" visible="true"/>
+												<ObjectNumber xmlns="sap.m" number="{parts: [{path: 'iInvoiced>QuantityInPurchaseOrderUnit'}, {path: 'iInvoiced>PurchaseOrderQuantityUnit'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{iInvoiced>PurchaseOrderQuantityUnit}" emphasized="false" state="None"/>
+												<ObjectNumber xmlns="sap.m" number="{parts: [{path: 'iInvoiced>SupplierInvoiceItemAmount'}, {path: 'iInvoiced>DocumentCurrency'}], type:'sap.ui.model.type.Currency', formatOptions: {showMeasure:false}}" unit="{iInvoiced>DocumentCurrency}" emphasized="false" state="None"/>
+												<Text text="{path: 'iInvoiced>CreationDate', formatter: '.formatDate'}"/>
+											</cells>
+										</ColumnListItem>
+									</items>
+								</Table>
+							</content>
+						</IconTabFilter>
+					</items>
+					<!--
                     <content>
                         <Text
                             text="Tab Bar Content goes here ..."
@@ -739,8 +276,8 @@
                         />
                     </content>
                     -->
-                </IconTabBar>
-            </Page>
-        </detailPages>
-    </SplitApp>
+				</IconTabBar>
+			</Page>
+		</detailPages>
+	</SplitApp>
 </mvc:View>
