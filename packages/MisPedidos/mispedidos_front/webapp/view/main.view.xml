@@ -47,8 +47,7 @@
 													formatOptions: { showMeasure: false }
 													}" numberUnit="{orders>DocumentCurrency}" type="Active" press="orderDetails">
 													<attributes>
-														<ObjectAttribute text="{path: 'orders>PurchaseOrderDate', formatter: '.formatDate'}"/>
-														<ObjectAttribute text="{orders>SupplierName}"/>
+														<ObjectAttribute text="{path: 'orders>PurchaseOrderDate', formatter: '.formatDate'}"/>														
 													</attributes>
 													<firstStatus>
 														<ObjectStatus text="" state="None"/>

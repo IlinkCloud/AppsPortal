@@ -130,8 +130,10 @@ sap.ui.define([
         orderDetails: function (oEvent) {
             // Obtenemos el binding del objeto
             var orderObject = oEvent.getSource().getBindingContext("orders").getObject();
-            var order = new sap.ui.model.json.JSONModel();
-            order.setData(orderObject);
+            var order = new sap.ui.model.json.JSONModel({
+                ...orderObject
+            });
+
             this.getOwnerComponent().setModel(order, "oDetails");
 
             this.getItemsOC(orderObject.PurchaseOrder);
@@ -158,27 +160,7 @@ sap.ui.define([
             })
                 .then(response => response.json())
                 .then(data => {
-                    // Actualizar nombre del proveedor en la cabecera
-                    const oHeader = data.value?.[0];
 
-                    if (oHeader) {
-
-                        const oDetailsModel =
-                            this.getOwnerComponent().getModel("oDetails");
-
-                        if (
-                            oDetailsModel &&
-                            oDetailsModel.getProperty("/PurchaseOrder") === PurchaseOrder &&
-                            String(oDetailsModel.getProperty("/Supplier")).trim() ===
-                            String(oHeader.Supplier).trim()
-                        ) {
-                            oDetailsModel.setProperty(
-                                "/SupplierName",
-                                oHeader.SupplierName || ""
-                            );
-                        }
-
-                    }
                     // Poner la data en el modelo JSON
                     //oODataJSONModel.setData(data);
                     // Asignar el modelo con nombre "vendor" al componente
