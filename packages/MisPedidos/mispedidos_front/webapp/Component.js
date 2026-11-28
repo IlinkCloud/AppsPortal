@@ -21,6 +21,17 @@ sap.ui.define([
 
             // enable routing
             this.getRouter().initialize();
+
+            // Inicia keep-alive
+            this._startKeepAlive();
+        },
+        _startKeepAlive: function () {
+            this._keepAliveInterval = setInterval(() => {
+                fetch("/odata/v4/invitacion/$metadata", {
+                    credentials: "same-origin"
+                }).catch(() => {
+                });
+            }, 5 * 60 * 1000); // cada 5 minutos
         }
     });
 });
